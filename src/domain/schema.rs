@@ -91,6 +91,12 @@ impl Schema {
             }
         }
 
+        for (key, value) in self.props.iter() {
+            if value.is_required() && config.get(key).is_none() {
+                return Err(Error::Generic);
+            }
+        }
+
         Ok(())
     }
 }
@@ -170,6 +176,19 @@ mod tests {
             .validate(&HashMap::from([
                 ("env".to_string(), Value::String("stg".to_string())),
                 ("num".to_string(), Value::Int(9)),
+            ]))
+            .is_err());
+        assert!(schema
+            .validate(&HashMap::from([(
+                "env".to_string(),
+                Value::String("stg".to_string())
+            ),]))
+            .is_err());
+        assert!(schema
+            .validate(&HashMap::from([
+                ("env".to_string(), Value::String("stg".to_string())),
+                ("num".to_string(), Value::Int(4)),
+                ("non_existing".to_string(), Value::Int(1)),
             ]))
             .is_err());
     }

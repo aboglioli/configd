@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::domain::Error;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Kind {
     String,
     Int,
@@ -12,7 +12,7 @@ pub enum Kind {
     Null,
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Value {
     String(String),
     Int(i64),

@@ -246,3 +246,15 @@ impl Prop {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create() {
+        let prop = Prop::create("prop", Kind::String).unwrap();
+        assert_eq!(prop.key(), "prop");
+        assert_eq!(prop.kind(), &Kind::String);
+    }
+}
