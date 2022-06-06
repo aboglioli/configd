@@ -41,10 +41,11 @@ pub struct Interval {
 }
 
 impl Interval {
-    pub fn new<MIN, MAX>(min: MIN, max: MAX) -> Result<Interval, Error>
+    pub fn new<N, MIN, MAX>(min: MIN, max: MAX) -> Result<Interval, Error>
     where
-        MIN: Into<Option<f64>>,
-        MAX: Into<Option<f64>>,
+        MIN: Into<Option<N>>,
+        MAX: Into<Option<N>>,
+        N: Into<f64>,
     {
         let min = min.into();
         let max = max.into();
@@ -53,7 +54,10 @@ impl Interval {
             return Err(Error::Generic);
         }
 
-        Ok(Interval { min, max })
+        Ok(Interval {
+            min: min.map(|n| n.into()),
+            max: max.map(|n| n.into()),
+        })
     }
 
     pub fn min(&self) -> Option<f64> {
