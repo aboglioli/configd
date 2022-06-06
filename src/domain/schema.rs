@@ -44,22 +44,24 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub fn new<N: Into<String>>(
-        id: SchemaId,
-        name: N,
-        props: HashMap<String, Prop>,
-    ) -> Result<Schema, Error> {
+    pub fn new<N: Into<String>>(id: SchemaId, name: N, props: Vec<Prop>) -> Result<Schema, Error> {
         let name = name.into();
 
         if name.is_empty() {
             return Err(Error::Generic);
         }
 
-        Ok(Schema { id, name, props })
+        let schema = Schema {
+            id,
+            name,
+            props: HashMap::new(),
+        };
+
+        schema.add_props(props)
     }
 
     pub fn create<N: Into<String>>(id: SchemaId, name: N) -> Result<Schema, Error> {
-        Schema::new(id, name, HashMap::new())
+        Schema::new(id, name, Vec::new())
     }
 
     pub fn id(&self) -> &SchemaId {
@@ -74,10 +76,12 @@ impl Schema {
         &self.props
     }
 
-    pub fn add_prop<K: Into<String>>(&mut self, key: K, prop: Prop) -> Result<(), Error> {
-        self.props.insert(key.into(), prop);
+    pub fn add_props(mut self, props: Vec<Prop>) -> Result<Schema, Error> {
+        for prop in props.into_iter() {
+            self.props.insert(prop.key().to_string(), prop);
+        }
 
-        Ok(())
+        Ok(self)
     }
 
     pub fn validate(&self, config: &HashMap<String, Value>) -> Result<(), Error> {
@@ -121,30 +125,24 @@ mod tests {
         let schema = Schema::new(
             SchemaId::new("schema#01").unwrap(),
             "Schema 01",
-            HashMap::from([
-                (
-                    "env".to_string(),
-                    Prop::create("env", Kind::String)
-                        .unwrap()
-                        .set_default_value(Value::String("dev".to_string()))
-                        .unwrap()
-                        .mark_as_required()
-                        .add_allowed_values(vec![
-                            Value::String("dev".to_string()),
-                            Value::String("stg".to_string()),
-                            Value::String("prod".to_string()),
-                        ])
-                        .unwrap(),
-                ),
-                (
-                    "num".to_string(),
-                    Prop::create("num", Kind::Int)
-                        .unwrap()
-                        .mark_as_required()
-                        .set_interval(Interval::new(2_f64, 8_f64).unwrap())
-                        .unwrap(),
-                ),
-            ]),
+            vec![
+                Prop::create("env", Kind::String)
+                    .unwrap()
+                    .set_default_value(Value::String("dev".to_string()))
+                    .unwrap()
+                    .mark_as_required()
+                    .add_allowed_values(vec![
+                        Value::String("dev".to_string()),
+                        Value::String("stg".to_string()),
+                        Value::String("prod".to_string()),
+                    ])
+                    .unwrap(),
+                Prop::create("num", Kind::Int)
+                    .unwrap()
+                    .mark_as_required()
+                    .set_interval(Interval::new(2, 8).unwrap())
+                    .unwrap(),
+            ],
         )
         .unwrap();
 

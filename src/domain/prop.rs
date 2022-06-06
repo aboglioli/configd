@@ -28,7 +28,7 @@ impl Prop {
         regex: Option<String>,
         interval: Option<Interval>,
         array: bool,
-        props: Option<HashMap<String, Prop>>,
+        props: Option<Vec<Prop>>,
     ) -> Result<Prop, Error> {
         let key = key.into();
 
@@ -125,11 +125,6 @@ impl Prop {
         self
     }
 
-    pub fn mark_as_array(mut self) -> Prop {
-        self.array = true;
-        self
-    }
-
     pub fn set_default_value(mut self, value: Value) -> Result<Prop, Error> {
         if self.kind != value.kind() {
             return Err(Error::Generic);
@@ -141,6 +136,10 @@ impl Prop {
     }
 
     pub fn add_allowed_values(mut self, values: Vec<Value>) -> Result<Prop, Error> {
+        if values.iter().any(|v| self.kind != v.kind()) {
+            return Err(Error::Generic);
+        }
+
         let mut allowed_values = self.allowed_values.unwrap_or_else(Vec::new);
         allowed_values.extend(values);
         self.allowed_values = Some(allowed_values);
@@ -170,13 +169,20 @@ impl Prop {
         Ok(self)
     }
 
-    pub fn add_props(mut self, props: HashMap<String, Prop>) -> Result<Prop, Error> {
+    pub fn mark_as_array(mut self) -> Prop {
+        self.array = true;
+        self
+    }
+
+    pub fn add_props(mut self, props: Vec<Prop>) -> Result<Prop, Error> {
         if self.kind != Kind::Object {
             return Err(Error::Generic);
         }
 
         let mut existing_props = self.props.unwrap_or_else(HashMap::new);
-        existing_props.extend(props);
+        for prop in props.into_iter() {
+            existing_props.insert(prop.key().to_string(), prop);
+        }
         self.props = Some(existing_props);
 
         Ok(self)
@@ -229,6 +235,28 @@ mod tests {
         assert_eq!(prop.key(), "prop");
         assert_eq!(prop.kind(), &Kind::String);
 
-        assert!(prop.set_default_value(Value::Int(3)).is_err());
+        // Valid
+
+        // Invalid
+        assert!(Prop::create("prop", Kind::String)
+            .unwrap()
+            .set_default_value(Value::Int(3))
+            .is_err());
+        assert!(Prop::create("prop", Kind::String)
+            .unwrap()
+            .add_allowed_values(vec![Value::String("default".to_string()), Value::Int(3)])
+            .is_err());
+        assert!(Prop::create("prop", Kind::Int)
+            .unwrap()
+            .set_regex("[a-z]*")
+            .is_err());
+        assert!(Prop::create("prop", Kind::String)
+            .unwrap()
+            .set_interval(Interval::new(1, 3).unwrap())
+            .is_err());
+        assert!(Prop::create("prop", Kind::String)
+            .unwrap()
+            .add_props(vec![Prop::create("subprop", Kind::Int).unwrap()])
+            .is_err());
     }
 }
