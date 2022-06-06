@@ -7,12 +7,13 @@ pub struct Prop {
     key: String,
     kind: Kind,
 
-    array: bool,
-    default_value: Option<Value>,
     required: bool,
+    default_value: Option<Value>,
     allowed_values: Option<Vec<Value>>,
     regex: Option<Regex>,
     interval: Option<Interval>,
+
+    array: bool,
 
     props: Option<HashMap<String, Prop>>,
 }
@@ -21,12 +22,12 @@ impl Prop {
     pub fn new<K: Into<String>>(
         key: K,
         kind: Kind,
-        array: bool,
-        default_value: Option<Value>,
         required: bool,
+        default_value: Option<Value>,
         allowed_values: Option<Vec<Value>>,
         regex: Option<String>,
         interval: Option<Interval>,
+        array: bool,
         props: Option<HashMap<String, Prop>>,
     ) -> Result<Prop, Error> {
         let key = key.into();
@@ -37,49 +38,49 @@ impl Prop {
 
         let mut prop = Prop {
             key,
-            array: false,
-            default_value: None,
             kind,
             required: false,
+            default_value: None,
             allowed_values: None,
             regex: None,
             interval: None,
+            array: false,
             props: None,
         };
 
-        if array {
-            prop.mark_as_array();
+        if required {
+            prop = prop.mark_as_required();
         }
 
         if let Some(value) = default_value {
-            prop.set_default_value(value)?;
-        }
-
-        if required {
-            prop.mark_as_required();
+            prop = prop.set_default_value(value)?;
         }
 
         if let Some(allowed_values) = allowed_values {
-            prop.set_allowed_values(allowed_values)?;
+            prop = prop.add_allowed_values(allowed_values)?;
         }
 
         if let Some(regex) = regex {
-            prop.set_regex(regex)?;
+            prop = prop.set_regex(regex)?;
         }
 
         if let Some(interval) = interval {
-            prop.set_interval(interval)?;
+            prop = prop.set_interval(interval)?;
+        }
+
+        if array {
+            prop = prop.mark_as_array();
         }
 
         if let Some(props) = props {
-            prop.set_props(props)?;
+            prop = prop.add_props(props)?;
         }
 
         Ok(prop)
     }
 
     pub fn create<K: Into<String>>(key: K, kind: Kind) -> Result<Prop, Error> {
-        Prop::new(key, kind, false, None, false, None, None, None, None)
+        Prop::new(key, kind, false, None, None, None, None, false, None)
     }
 
     pub fn key(&self) -> &str {
@@ -94,67 +95,60 @@ impl Prop {
         self.required
     }
 
-    pub fn mark_as_required(&mut self) {
-        self.required = true;
-    }
-
-    pub fn is_array(&self) -> bool {
-        self.array
-    }
-
-    pub fn mark_as_array(&mut self) {
-        self.array = true;
-    }
-
     pub fn default_value(&self) -> Option<&Value> {
         self.default_value.as_ref()
-    }
-
-    pub fn set_default_value(&mut self, value: Value) -> Result<(), Error> {
-        if self.kind != value.kind() {
-            return Err(Error::Generic);
-        }
-
-        self.default_value = Some(value);
-
-        Ok(())
     }
 
     pub fn allowed_values(&self) -> Option<&Vec<Value>> {
         self.allowed_values.as_ref()
     }
 
-    pub fn set_allowed_values(&mut self, values: Vec<Value>) -> Result<(), Error> {
-        for value in values.iter() {
-            if self.kind != value.kind() {
-                return Err(Error::Generic);
-            }
-        }
-
-        self.allowed_values = Some(values);
-
-        Ok(())
-    }
-
-    pub fn add_allowed_value(&mut self, value: Value) -> Result<(), Error> {
-        if self.kind != value.kind() {
-            return Err(Error::Generic);
-        }
-
-        if let Some(allowed_values) = &mut self.allowed_values {
-            allowed_values.push(value);
-        } else {
-            self.allowed_values = Some(vec![value]);
-        }
-
-        Ok(())
-    }
-
     pub fn regex(&self) -> Option<&Regex> {
         self.regex.as_ref()
     }
 
-    pub fn set_regex<S: AsRef<str>>(&mut self, pattern: S) -> Result<(), Error> {
+    pub fn interval(&self) -> Option<&Interval> {
+        self.interval.as_ref()
+    }
+
+    pub fn is_array(&self) -> bool {
+        self.array
+    }
+
+    pub fn props(&self) -> Option<&HashMap<String, Prop>> {
+        self.props.as_ref()
+    }
+
+    // Builder
+    pub fn mark_as_required(mut self) -> Prop {
+        self.required = true;
+        self
+    }
+
+    pub fn mark_as_array(mut self) -> Prop {
+        self.array = true;
+        self
+    }
+
+    pub fn set_default_value(mut self, value: Value) -> Result<Prop, Error> {
+        if self.kind != value.kind() {
+            return Err(Error::Generic);
+        }
+
+        self.default_value = Some(value);
+
+        Ok(self)
+    }
+
+    pub fn add_allowed_values(mut self, values: Vec<Value>) -> Result<Prop, Error> {
+        let mut allowed_values = self.allowed_values.unwrap_or_else(Vec::new);
+        allowed_values.extend(values);
+        self.allowed_values = Some(allowed_values);
+
+        Ok(self)
+    }
+
+    pub fn set_regex<S: AsRef<str>>(mut self, pattern: S) -> Result<Prop, Error> {
         if self.kind != Kind::String {
             return Err(Error::Generic);
         }
@@ -163,54 +157,32 @@ impl Prop {
 
         self.regex = Some(re);
 
-        Ok(())
+        Ok(self)
     }
 
-    pub fn interval(&self) -> Option<&Interval> {
-        self.interval.as_ref()
-    }
-
-    pub fn set_interval(&mut self, interval: Interval) -> Result<(), Error> {
+    pub fn set_interval(mut self, interval: Interval) -> Result<Prop, Error> {
         if self.kind != Kind::Int && self.kind != Kind::Float {
             return Err(Error::Generic);
         }
 
         self.interval = Some(interval);
 
-        Ok(())
+        Ok(self)
     }
 
-    pub fn props(&self) -> Option<&HashMap<String, Prop>> {
-        self.props.as_ref()
-    }
-
-    pub fn set_props(&mut self, props: HashMap<String, Prop>) -> Result<(), Error> {
+    pub fn add_props(mut self, props: HashMap<String, Prop>) -> Result<Prop, Error> {
         if self.kind != Kind::Object {
             return Err(Error::Generic);
         }
 
-        self.props = Some(props);
+        let mut existing_props = self.props.unwrap_or_else(HashMap::new);
+        existing_props.extend(props);
+        self.props = Some(existing_props);
 
-        Ok(())
+        Ok(self)
     }
 
-    pub fn add_prop<K: Into<String>>(&mut self, key: K, prop: Prop) -> Result<(), Error> {
-        if self.kind != Kind::Object {
-            return Err(Error::Generic);
-        }
-
-        if let Some(props) = &mut self.props {
-            props.insert(key.into(), prop);
-        } else {
-            let mut props = HashMap::new();
-            props.insert(key.into(), prop);
-
-            self.props = Some(props);
-        }
-
-        Ok(())
-    }
-
+    // Value validation
     pub fn validate_value(&self, value: &Value) -> Result<(), Error> {
         if self.kind != value.kind() {
             return Err(Error::Generic);
@@ -256,5 +228,7 @@ mod tests {
         let prop = Prop::create("prop", Kind::String).unwrap();
         assert_eq!(prop.key(), "prop");
         assert_eq!(prop.kind(), &Kind::String);
+
+        assert!(prop.set_default_value(Value::Int(3)).is_err());
     }
 }

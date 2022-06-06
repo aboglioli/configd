@@ -124,37 +124,25 @@ mod tests {
             HashMap::from([
                 (
                     "env".to_string(),
-                    Prop::new(
-                        "env",
-                        Kind::String,
-                        false,
-                        Some(Value::String("dev".to_string())),
-                        true,
-                        Some(vec![
+                    Prop::create("env", Kind::String)
+                        .unwrap()
+                        .set_default_value(Value::String("dev".to_string()))
+                        .unwrap()
+                        .mark_as_required()
+                        .add_allowed_values(vec![
                             Value::String("dev".to_string()),
                             Value::String("stg".to_string()),
                             Value::String("prod".to_string()),
-                        ]),
-                        None,
-                        None,
-                        None,
-                    )
-                    .unwrap(),
+                        ])
+                        .unwrap(),
                 ),
                 (
                     "num".to_string(),
-                    Prop::new(
-                        "num",
-                        Kind::Int,
-                        false,
-                        None,
-                        true,
-                        None,
-                        None,
-                        Some(Interval::new(2_f64, 8_f64).unwrap()),
-                        None,
-                    )
-                    .unwrap(),
+                    Prop::create("num", Kind::Int)
+                        .unwrap()
+                        .mark_as_required()
+                        .set_interval(Interval::new(2_f64, 8_f64).unwrap())
+                        .unwrap(),
                 ),
             ]),
         )
