@@ -4,33 +4,36 @@ use crate::domain::Error;
 
 #[derive(Debug, PartialEq)]
 pub enum Kind {
-    String,
+    Null,
+    Bool,
     Int,
     Float,
-    Bool,
+    String,
+    Array,
     Object,
-    Null,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum Value {
-    String(String),
+    Null,
+    Bool(bool),
     Int(i64),
     Float(f64),
-    Bool(bool),
+    String(String),
+    Array(Vec<Value>),
     Object(HashMap<String, Value>),
-    Null,
 }
 
 impl Value {
     pub fn kind(&self) -> Kind {
         match self {
-            Value::String(_) => Kind::String,
+            Value::Null => Kind::Null,
+            Value::Bool(_) => Kind::Bool,
             Value::Int(_) => Kind::Int,
             Value::Float(_) => Kind::Float,
-            Value::Bool(_) => Kind::Bool,
+            Value::String(_) => Kind::String,
+            Value::Array(_) => Kind::Array,
             Value::Object(_) => Kind::Object,
-            Value::Null => Kind::Null,
         }
     }
 }
