@@ -36,6 +36,10 @@ impl Prop {
             return Err(Error::Generic);
         }
 
+        if kind == Kind::Null || kind == Kind::Array {
+            return Err(Error::Generic);
+        }
+
         let mut prop = Prop {
             key,
             kind,
@@ -119,6 +123,10 @@ impl Prop {
         self.props.as_ref()
     }
 
+    pub fn is_object(&self) -> bool {
+        self.props.is_some()
+    }
+
     // Builder
     pub fn mark_as_required(mut self) -> Prop {
         self.required = true;
@@ -189,8 +197,51 @@ impl Prop {
     }
 
     // Value validation
-    pub fn validate_value(&self, value: &Value) -> Result<(), Error> {
-        if self.kind != value.kind() {
+    pub fn validate(&self, value: &Value) -> Result<(), Error> {
+        self.validate_with_array(value, true)
+    }
+
+    fn validate_with_array(&self, value: &Value, validate_array: bool) -> Result<(), Error> {
+        // Array
+        if validate_array && self.is_array() {
+            if let Value::Array(items) = value {
+                for item in items.iter() {
+                    self.validate_with_array(item, false)?;
+                }
+
+                return Ok(());
+            } else {
+                return Err(Error::Generic);
+            }
+        }
+
+        // Object
+        if self.is_object() {
+            if let Value::Object(object) = value {
+                if let Some(props) = &self.props {
+                    for (key, value) in object.iter() {
+                        if let Some(prop) = props.get(key) {
+                            prop.validate_with_array(value, true)?;
+                        } else {
+                            return Err(Error::Generic);
+                        }
+                    }
+
+                    for (key, _) in props.iter() {
+                        if !object.contains_key(key) {
+                            return Err(Error::Generic);
+                        }
+                    }
+
+                    return Ok(());
+                }
+            }
+
+            return Err(Error::Generic);
+        }
+
+        // Value
+        if self.kind != value.kind() && value.kind() != Kind::Null {
             return Err(Error::Generic);
         }
 
@@ -236,6 +287,14 @@ mod tests {
         assert_eq!(prop.kind(), &Kind::String);
 
         // Valid
+        assert!(Prop::create("prop", Kind::String)
+            .unwrap()
+            .set_regex("[a-z]*")
+            .is_ok());
+        assert!(Prop::create("prop", Kind::Object)
+            .unwrap()
+            .add_props(vec![Prop::create("subprop", Kind::Int).unwrap()])
+            .is_ok());
 
         // Invalid
         assert!(Prop::create("prop", Kind::String)
@@ -257,6 +316,161 @@ mod tests {
         assert!(Prop::create("prop", Kind::String)
             .unwrap()
             .add_props(vec![Prop::create("subprop", Kind::Int).unwrap()])
+            .is_err());
+        assert!(Prop::create("prop", Kind::Object)
+            .unwrap()
+            .set_regex("[a-zA-Z]+")
+            .is_err());
+    }
+
+    #[test]
+    fn validate() {
+        // Valid
+        assert!(Prop::create("prop", Kind::String)
+            .unwrap()
+            .set_regex("[a-z]*")
+            .unwrap()
+            .validate(&Value::String("hello".to_string()))
+            .is_ok());
+        assert!(Prop::create("prop", Kind::Int)
+            .unwrap()
+            .set_interval(Interval::new(1, 5).unwrap())
+            .unwrap()
+            .validate(&Value::Int(3))
+            .is_ok());
+        assert!(Prop::create("prop", Kind::Int)
+            .unwrap()
+            .add_allowed_values(vec![Value::Int(1), Value::Int(2)])
+            .unwrap()
+            .validate(&Value::Int(2))
+            .is_ok());
+        assert!(Prop::create("prop", Kind::Int)
+            .unwrap()
+            .mark_as_array()
+            .set_interval(Interval::new(1, 5).unwrap())
+            .unwrap()
+            .validate(&Value::Array(vec![Value::Int(1), Value::Int(2)]))
+            .is_ok());
+        assert!(Prop::create("prop", Kind::Float)
+            .unwrap()
+            .mark_as_array()
+            .validate(&Value::Array(vec![Value::Float(3.14), Value::Null]))
+            .is_ok());
+        assert!(Prop::create("prop", Kind::Object)
+            .unwrap()
+            .add_props(vec![
+                Prop::create("str", Kind::String).unwrap(),
+                Prop::create("num", Kind::Int).unwrap(),
+                Prop::create("bool", Kind::Bool).unwrap(),
+            ])
+            .unwrap()
+            .validate(&Value::Object(HashMap::from([
+                ("str".to_string(), Value::String("String".to_string())),
+                ("num".to_string(), Value::Int(2)),
+                ("bool".to_string(), Value::Bool(true)),
+            ]),))
+            .is_ok());
+
+        // Invalid
+        assert!(Prop::create("prop", Kind::String)
+            .unwrap()
+            .validate(&Value::Int(123))
+            .is_err());
+        assert!(Prop::create("prop", Kind::String)
+            .unwrap()
+            .mark_as_required()
+            .validate(&Value::Null)
+            .is_err());
+        assert!(Prop::create("prop", Kind::String)
+            .unwrap()
+            .set_regex("^[a-z]*$")
+            .unwrap()
+            .validate(&Value::String("Hello123".to_string()))
+            .is_err());
+        assert!(Prop::create("prop", Kind::Int)
+            .unwrap()
+            .set_interval(Interval::new(1, 5).unwrap())
+            .unwrap()
+            .validate(&Value::Int(6))
+            .is_err());
+        assert!(Prop::create("prop", Kind::Int)
+            .unwrap()
+            .add_allowed_values(vec![Value::Int(1), Value::Int(3)])
+            .unwrap()
+            .validate(&Value::Int(2))
+            .is_err());
+        assert!(Prop::create("prop", Kind::Int)
+            .unwrap()
+            .mark_as_array()
+            .validate(&Value::Array(vec![
+                Value::Int(1),
+                Value::String("2".to_string())
+            ]))
+            .is_err());
+        assert!(Prop::create("prop", Kind::Int)
+            .unwrap()
+            .mark_as_array()
+            .set_interval(Interval::new(1, 5).unwrap())
+            .unwrap()
+            .validate(&Value::Array(vec![Value::Int(1), Value::Int(6)]))
+            .is_err());
+        assert!(Prop::create("prop", Kind::Float)
+            .unwrap()
+            .mark_as_array()
+            .mark_as_required()
+            .validate(&Value::Array(vec![Value::Float(3.14), Value::Null]))
+            .is_err());
+        assert!(Prop::create("prop", Kind::Object)
+            .unwrap()
+            .add_props(vec![
+                Prop::create("str", Kind::String).unwrap(),
+                Prop::create("num", Kind::Int).unwrap(),
+                Prop::create("bool", Kind::Bool).unwrap(),
+            ])
+            .unwrap()
+            .validate(&Value::Object(HashMap::from([
+                ("str".to_string(), Value::Int(2)),
+                ("num".to_string(), Value::String("String".to_string())),
+                ("bool".to_string(), Value::Bool(true)),
+            ])))
+            .is_err());
+        assert!(Prop::create("prop", Kind::Object)
+            .unwrap()
+            .add_props(vec![
+                Prop::create("str", Kind::String).unwrap(),
+                Prop::create("num", Kind::Int).unwrap().mark_as_required(),
+            ])
+            .unwrap()
+            .validate(&Value::Object(HashMap::from([
+                ("str".to_string(), Value::Null),
+                ("num".to_string(), Value::Null),
+            ])))
+            .is_err());
+        assert!(Prop::create("prop", Kind::Object)
+            .unwrap()
+            .add_props(vec![
+                Prop::create("str", Kind::String).unwrap(),
+                Prop::create("num", Kind::Int).unwrap(),
+            ])
+            .unwrap()
+            .validate(&Value::Object(HashMap::from([
+                ("str".to_string(), Value::String("String".to_string())),
+                ("num".to_string(), Value::Int(2)),
+                ("extra_prop".to_string(), Value::Bool(true)),
+            ])))
+            .is_err());
+        assert!(Prop::create("prop", Kind::Object)
+            .unwrap()
+            .add_props(vec![
+                Prop::create("str", Kind::String).unwrap(),
+                Prop::create("num", Kind::Int).unwrap(),
+                Prop::create("bool", Kind::Bool).unwrap(),
+            ])
+            .unwrap()
+            .validate(&Value::Object(HashMap::from([
+                ("str".to_string(), Value::String("String".to_string())),
+                ("num".to_string(), Value::Int(2)),
+            ]),))
             .is_err());
     }
 }
