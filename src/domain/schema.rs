@@ -87,16 +87,14 @@ impl Schema {
     pub fn validate(&self, config: &HashMap<String, Value>) -> Result<(), Error> {
         for (key, value) in config.iter() {
             if let Some(prop) = self.props.get(key) {
-                if let Err(err) = prop.validate_value(value) {
-                    return Err(err);
-                }
+                prop.validate(value)?;
             } else {
                 return Err(Error::Generic);
             }
         }
 
         for (key, value) in self.props.iter() {
-            if value.is_required() && config.get(key).is_none() {
+            if value.is_required() && !config.contains_key(key) {
                 return Err(Error::Generic);
             }
         }
