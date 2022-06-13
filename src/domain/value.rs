@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::domain::Error;
 
+// Value & Kind
 #[derive(Debug, PartialEq)]
 pub enum Kind {
     Null,
@@ -38,58 +39,120 @@ impl Value {
     }
 }
 
-pub struct Interval {
-    min: Option<f64>,
-    max: Option<f64>,
+impl From<bool> for Value {
+    fn from(value: bool) -> Self {
+        Value::Bool(value)
+    }
 }
 
-impl Interval {
-    pub fn new<N, MIN, MAX>(min: MIN, max: MAX) -> Result<Interval, Error>
-    where
-        MIN: Into<Option<N>>,
-        MAX: Into<Option<N>>,
-        N: Into<f64>,
-    {
-        let min = min.into();
-        let max = max.into();
-
-        if min.is_none() && max.is_none() {
-            return Err(Error::Generic);
-        }
-
-        Ok(Interval {
-            min: min.map(|n| n.into()),
-            max: max.map(|n| n.into()),
-        })
+impl From<i64> for Value {
+    fn from(value: i64) -> Self {
+        Value::Int(value)
     }
+}
 
-    pub fn min(&self) -> Option<f64> {
-        self.min
+impl From<f64> for Value {
+    fn from(value: f64) -> Self {
+        Value::Float(value)
     }
+}
 
-    pub fn max(&self) -> Option<f64> {
-        self.max
+impl From<String> for Value {
+    fn from(value: String) -> Self {
+        Value::String(value)
     }
+}
 
-    pub fn is_value_valid(&self, value: &Value) -> bool {
-        let value = match value {
-            Value::Int(value) => *value as f64,
-            Value::Float(value) => *value,
-            _ => return false,
-        };
+impl From<&str> for Value {
+    fn from(value: &str) -> Self {
+        Value::String(value.to_string())
+    }
+}
 
-        if let Some(min) = self.min {
-            if value < min {
-                return false;
-            }
+impl<T> From<Vec<T>> for Value
+where
+    T: Into<Value>,
+{
+    fn from(values: Vec<T>) -> Self {
+        Value::Array(values.into_iter().map(|value| value.into()).collect())
+    }
+}
+
+impl<T> From<Option<T>> for Value
+where
+    T: Into<Value>,
+{
+    fn from(value: Option<T>) -> Self {
+        match value {
+            Some(value) => value.into(),
+            None => Value::Null,
         }
+    }
+}
 
-        if let Some(max) = self.max {
-            if value > max {
-                return false;
-            }
-        }
+impl<K, V> From<HashMap<K, V>> for Value
+where
+    K: Into<String>,
+    V: Into<Value>,
+{
+    fn from(values: HashMap<K, V>) -> Self {
+        Value::Object(
+            values
+                .into_iter()
+                .map(|(key, value)| (key.into(), value.into()))
+                .collect(),
+        )
+    }
+}
 
-        true
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from() {
+        assert_eq!(Value::from(true), Value::Bool(true));
+        assert_eq!(Value::from(123), Value::Int(123));
+        assert_eq!(Value::from(1.23), Value::Float(1.23));
+        assert_eq!(Value::from("str"), Value::String("str".to_string()));
+        assert_eq!(
+            Value::from("str".to_string()),
+            Value::String("str".to_string())
+        );
+        assert_eq!(Value::from(None as Option<i64>), Value::Null,);
+        assert_eq!(Value::from(Some("str")), Value::String("str".to_string()),);
+        assert_eq!(
+            Value::from(vec![
+                Value::from("str"),
+                Value::from(123),
+                Value::from(vec![Value::from(true)]),
+                Value::from(vec![1.23, 3.45, 5.22]),
+            ]),
+            Value::Array(vec![
+                Value::String("str".to_string()),
+                Value::Int(123),
+                Value::Array(vec![Value::Bool(true)]),
+                Value::Array(vec![
+                    Value::Float(1.23),
+                    Value::Float(3.45),
+                    Value::Float(5.22)
+                ]),
+            ]),
+        );
+        assert_eq!(
+            Value::from(HashMap::from([
+                ("str", Value::from("str")),
+                ("num", Value::from(3.14)),
+                ("arr", Value::from(vec!["item_1"])),
+            ])),
+            Value::Object(HashMap::from([
+                ("str".to_string(), Value::String("str".to_string())),
+                ("num".to_string(), Value::Float(3.14)),
+                (
+                    "arr".to_string(),
+                    Value::Array(vec![Value::String("item_1".to_string())])
+                ),
+            ])),
+        );
     }
 }
