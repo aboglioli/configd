@@ -3,6 +3,12 @@ use std::collections::HashMap;
 
 use crate::domain::{Error, Prop, Value};
 
+pub trait SchemaBuilder<P> {
+    type Error;
+
+    fn build(&self, id: SchemaId, name: String, props: P) -> Result<Schema, Self::Error>;
+}
+
 #[async_trait]
 pub trait SchemaRepository {
     async fn find_by_id(&self, id: &SchemaId) -> Result<Option<Schema>, Error>;
@@ -44,24 +50,22 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub fn new<N: Into<String>>(id: SchemaId, name: N, props: Vec<Prop>) -> Result<Schema, Error> {
+    pub fn new<N: Into<String>>(
+        id: SchemaId,
+        name: N,
+        props: HashMap<String, Prop>,
+    ) -> Result<Schema, Error> {
         let name = name.into();
 
         if name.is_empty() {
             return Err(Error::Generic);
         }
 
-        let schema = Schema {
-            id,
-            name,
-            props: HashMap::new(),
-        };
-
-        schema.add_props(props)
+        Ok(Schema { id, name, props })
     }
 
     pub fn create<N: Into<String>>(id: SchemaId, name: N) -> Result<Schema, Error> {
-        Schema::new(id, name, Vec::new())
+        Schema::new(id, name, HashMap::new())
     }
 
     pub fn id(&self) -> &SchemaId {
@@ -76,30 +80,20 @@ impl Schema {
         &self.props
     }
 
-    pub fn add_props(mut self, props: Vec<Prop>) -> Result<Schema, Error> {
-        for prop in props.into_iter() {
-            self.props.insert(prop.key().to_string(), prop);
-        }
+    pub fn add_prop<K: Into<String>>(mut self, key: K, prop: Prop) -> Result<Schema, Error> {
+        self.props.insert(key.into(), prop);
 
         Ok(self)
     }
 
-    pub fn validate(&self, config: &HashMap<String, Value>) -> Result<(), Error> {
-        for (key, value) in config.iter() {
+    pub fn validate(&self, values: &HashMap<String, Value>) -> bool {
+        values.iter().all(|(key, value)| {
             if let Some(prop) = self.props.get(key) {
-                prop.validate(value)?;
+                prop.validate(value)
             } else {
-                return Err(Error::Generic);
+                false
             }
-        }
-
-        for (key, value) in self.props.iter() {
-            if value.is_required() && !config.contains_key(key) {
-                return Err(Error::Generic);
-            }
-        }
-
-        Ok(())
+        }) && self.props.iter().all(|(key, _)| values.contains_key(key))
     }
 }
 
@@ -123,57 +117,54 @@ mod tests {
         let schema = Schema::new(
             SchemaId::new("schema#01").unwrap(),
             "Schema 01",
-            vec![
-                Prop::create("env", Kind::String)
-                    .unwrap()
-                    .set_default_value(Value::String("dev".to_string()))
-                    .unwrap()
-                    .mark_as_required()
-                    .add_allowed_values(vec![
-                        Value::String("dev".to_string()),
-                        Value::String("stg".to_string()),
-                        Value::String("prod".to_string()),
-                    ])
+            HashMap::from([
+                (
+                    "env".to_string(),
+                    Prop::string(
+                        true,
+                        Some(Value::String("dev".to_string())),
+                        Some(vec![
+                            Value::String("dev".to_string()),
+                            Value::String("stg".to_string()),
+                            Value::String("prod".to_string()),
+                        ]),
+                        None,
+                    )
                     .unwrap(),
-                Prop::create("num", Kind::Int)
-                    .unwrap()
-                    .mark_as_required()
-                    .set_interval(Interval::new(2, 8).unwrap())
-                    .unwrap(),
-            ],
+                ),
+                (
+                    "num".to_string(),
+                    Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap())).unwrap(),
+                ),
+            ]),
         )
         .unwrap();
 
-        assert!(schema
-            .validate(&HashMap::from([
-                ("env".to_string(), Value::String("stg".to_string())),
-                ("num".to_string(), Value::Int(4)),
-            ]))
-            .is_ok());
-        assert!(schema
-            .validate(&HashMap::from([
-                ("env".to_string(), Value::String("other".to_string())),
-                ("num".to_string(), Value::Int(4)),
-            ]))
-            .is_err());
-        assert!(schema
-            .validate(&HashMap::from([
-                ("env".to_string(), Value::String("stg".to_string())),
-                ("num".to_string(), Value::Int(9)),
-            ]))
-            .is_err());
-        assert!(schema
-            .validate(&HashMap::from([(
-                "env".to_string(),
-                Value::String("stg".to_string())
-            ),]))
-            .is_err());
-        assert!(schema
-            .validate(&HashMap::from([
-                ("env".to_string(), Value::String("stg".to_string())),
-                ("num".to_string(), Value::Int(4)),
-                ("non_existing".to_string(), Value::Int(1)),
-            ]))
-            .is_err());
+        assert!(schema.validate(&HashMap::from([
+            ("env".to_string(), Value::String("stg".to_string())),
+            ("num".to_string(), Value::Int(4)),
+        ])));
+
+        assert!(schema.validate(&HashMap::from([
+            ("env".to_string(), Value::String("stg".to_string())),
+            ("num".to_string(), Value::Int(4)),
+        ])));
+        assert!(!schema.validate(&HashMap::from([
+            ("env".to_string(), Value::String("other".to_string())),
+            ("num".to_string(), Value::Int(4)),
+        ])));
+        assert!(!schema.validate(&HashMap::from([
+            ("env".to_string(), Value::String("stg".to_string())),
+            ("num".to_string(), Value::Int(9)),
+        ])));
+        assert!(!schema.validate(&HashMap::from([(
+            "env".to_string(),
+            Value::String("stg".to_string())
+        )])));
+        assert!(!schema.validate(&HashMap::from([
+            ("env".to_string(), Value::String("stg".to_string())),
+            ("num".to_string(), Value::Int(4)),
+            ("non_existing".to_string(), Value::Int(1)),
+        ])));
     }
 }
