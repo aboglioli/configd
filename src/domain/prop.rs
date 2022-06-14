@@ -3,6 +3,13 @@ use std::collections::HashMap;
 
 use crate::domain::{Error, Interval, Kind, Value};
 
+pub trait PropBuilder<T> {
+    type Error;
+
+    fn build(&self, props: T) -> Result<Prop, Self::Error>;
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Prop {
     Bool {
         required: bool,
@@ -24,7 +31,7 @@ pub enum Prop {
         required: bool,
         default_value: Option<Value>,
         allowed_values: Option<Vec<Value>>,
-        regex: Option<Regex>,
+        regex: Option<String>,
     },
     Array(Box<Prop>),
     Object(HashMap<String, Prop>),
@@ -120,11 +127,6 @@ impl Prop {
             }
         }
 
-        let regex = regex
-            .map(|regex| Regex::new(&regex))
-            .transpose()
-            .map_err(|_| Error::Generic)?;
-
         Ok(Prop::String {
             required,
             default_value,
@@ -160,11 +162,11 @@ impl Prop {
         }
     }
 
-    pub fn allowed_values(&self) -> Option<&Vec<Value>> {
+    pub fn allowed_values(&self) -> Option<&[Value]> {
         match self {
             Prop::Int { allowed_values, .. }
             | Prop::Float { allowed_values, .. }
-            | Prop::String { allowed_values, .. } => allowed_values.as_ref(),
+            | Prop::String { allowed_values, .. } => allowed_values.as_deref(),
             _ => None,
         }
     }
@@ -176,9 +178,9 @@ impl Prop {
         }
     }
 
-    pub fn regex(&self) -> Option<&Regex> {
+    pub fn regex(&self) -> Option<&str> {
         match self {
-            Prop::String { regex, .. } => regex.as_ref(),
+            Prop::String { regex, .. } => regex.as_deref(),
             _ => None,
         }
     }
@@ -223,7 +225,9 @@ impl Prop {
             Prop::String { regex, .. } => {
                 if let Value::String(value) = value {
                     if let Some(regex) = regex {
-                        return regex.is_match(value);
+                        if let Ok(regex) = Regex::new(regex) {
+                            return regex.is_match(value);
+                        }
                     }
 
                     return true;
