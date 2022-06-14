@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::domain::{Error, Interval, Prop, PropBuilder, Value};
 
@@ -56,7 +56,7 @@ impl PropBuilder<JsonValue> for JsonPropBuilder {
     fn build(&self, props: JsonValue) -> Result<Prop, Self::Error> {
         match props {
             JsonValue::Object(map) => {
-                let mut object = HashMap::new();
+                let mut object = BTreeMap::new();
 
                 for (key, value) in map.into_iter() {
                     if key == Self::SCHEMA_KEY {
@@ -152,7 +152,7 @@ mod tests {
                 }"#,
                 )
                 .unwrap(),
-            Prop::Object(HashMap::from([
+            Prop::Object(BTreeMap::from([
                 (
                     "env".to_string(),
                     Prop::string(
@@ -184,7 +184,7 @@ mod tests {
                             true,
                             Some(Value::String("http://localhost:1234".to_string())),
                             None,
-                            Some("^http://[a-z]+:[0-9]{2,4}".to_string()),
+                            Some("^http://[a-z]+:[0-9]{2,4}$".to_string()),
                         )
                         .unwrap(),
                     )
