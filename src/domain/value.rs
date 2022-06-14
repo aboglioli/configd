@@ -1,6 +1,5 @@
+use serde_json::Value as JsonValue;
 use std::collections::HashMap;
-
-use crate::domain::Error;
 
 // Value & Kind
 #[derive(Debug, PartialEq)]
@@ -14,7 +13,7 @@ pub enum Kind {
     Object,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Value {
     Null,
     Bool(bool),
@@ -102,6 +101,32 @@ where
                 .map(|(key, value)| (key.into(), value.into()))
                 .collect(),
         )
+    }
+}
+
+impl From<JsonValue> for Value {
+    fn from(value: JsonValue) -> Self {
+        match value {
+            JsonValue::Null => Value::Null,
+            JsonValue::Bool(value) => Value::Bool(value),
+            JsonValue::Number(value) => {
+                if let Some(value) = value.as_i64() {
+                    Value::Int(value)
+                } else if let Some(value) = value.as_f64() {
+                    Value::Float(value)
+                } else {
+                    Value::Null
+                }
+            }
+            JsonValue::String(value) => Value::String(value),
+            JsonValue::Array(values) => Value::Array(values.into_iter().map(Value::from).collect()),
+            JsonValue::Object(values) => Value::Object(
+                values
+                    .into_iter()
+                    .map(|(key, value)| (key, Value::from(value)))
+                    .collect(),
+            ),
+        }
     }
 }
 
