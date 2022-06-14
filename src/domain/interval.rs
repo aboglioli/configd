@@ -1,6 +1,6 @@
 use crate::domain::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Interval {
     min: Option<f64>,
     max: Option<f64>,

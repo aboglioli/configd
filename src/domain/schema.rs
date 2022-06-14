@@ -101,7 +101,7 @@ impl Schema {
 mod tests {
     use super::*;
 
-    use crate::domain::{Interval, Kind};
+    use crate::domain::Interval;
 
     #[test]
     fn create() {
