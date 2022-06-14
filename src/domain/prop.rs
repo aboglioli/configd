@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::domain::{Error, Interval, Kind, Value};
 
@@ -34,7 +34,7 @@ pub enum Prop {
         regex: Option<String>,
     },
     Array(Box<Prop>),
-    Object(HashMap<String, Prop>),
+    Object(BTreeMap<String, Prop>),
 }
 
 impl Prop {
@@ -139,7 +139,7 @@ impl Prop {
         Prop::Array(Box::new(prop))
     }
 
-    pub fn object(props: HashMap<String, Prop>) -> Prop {
+    pub fn object(props: BTreeMap<String, Prop>) -> Prop {
         Prop::Object(props)
     }
 

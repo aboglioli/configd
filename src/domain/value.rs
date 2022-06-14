@@ -1,5 +1,5 @@
 use serde_json::Value as JsonValue;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 // Value & Kind
 #[derive(Debug, PartialEq)]
@@ -21,7 +21,7 @@ pub enum Value {
     Float(f64),
     String(String),
     Array(Vec<Value>),
-    Object(HashMap<String, Value>),
+    Object(BTreeMap<String, Value>),
 }
 
 impl Value {
@@ -86,6 +86,21 @@ where
             Some(value) => value.into(),
             None => Value::Null,
         }
+    }
+}
+
+impl<K, V> From<BTreeMap<K, V>> for Value
+where
+    K: Into<String>,
+    V: Into<Value>,
+{
+    fn from(values: BTreeMap<K, V>) -> Self {
+        Value::Object(
+            values
+                .into_iter()
+                .map(|(key, value)| (key.into(), value.into()))
+                .collect(),
+        )
     }
 }
 
@@ -165,12 +180,27 @@ mod tests {
             ]),
         );
         assert_eq!(
+            Value::from(BTreeMap::from([
+                ("str", Value::from("str")),
+                ("num", Value::from(3.14)),
+                ("arr", Value::from(vec!["item_1"])),
+            ])),
+            Value::Object(BTreeMap::from([
+                ("str".to_string(), Value::String("str".to_string())),
+                ("num".to_string(), Value::Float(3.14)),
+                (
+                    "arr".to_string(),
+                    Value::Array(vec![Value::String("item_1".to_string())])
+                ),
+            ])),
+        );
+        assert_eq!(
             Value::from(HashMap::from([
                 ("str", Value::from("str")),
                 ("num", Value::from(3.14)),
                 ("arr", Value::from(vec!["item_1"])),
             ])),
-            Value::Object(HashMap::from([
+            Value::Object(BTreeMap::from([
                 ("str".to_string(), Value::String("str".to_string())),
                 ("num".to_string(), Value::Float(3.14)),
                 (
