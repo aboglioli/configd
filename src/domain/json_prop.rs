@@ -111,8 +111,6 @@ impl PropBuilder<JsonValue> for JsonPropBuilder {
 mod tests {
     use super::*;
 
-    use std::collections::HashMap;
-
     #[test]
     fn build_from_json_string() {
         let builder = JsonPropBuilder::new();
@@ -121,35 +119,73 @@ mod tests {
             builder
                 .build(
                     r#"{
-                    "env": {
-                        "$schema": {
-                            "kind": "string",
-                            "required": true,
-                            "allowed_values": ["dev", "stg", "prod"]
-                        }
-                    },
-                    "instances": {
-                        "$schema": {
-                            "kind": "int",
-                            "required": false,
-                            "default_value": 3,
-                            "interval": {
-                                "min": 2,
-                                "max": 10
-                            }
-                        }
-                    },
-                    "database_urls": [
-                        {
+                        "env": {
                             "$schema": {
                                 "kind": "string",
                                 "required": true,
-                                "default_value": "http://localhost:1234",
-                                "regex": "^http://[a-z]+:[0-9]{2,4}$"
+                                "allowed_values": ["dev", "stg", "prod"]
                             }
-                        }
-                    ]
-                }"#,
+                        },
+                        "instances": {
+                            "$schema": {
+                                "kind": "int",
+                                "required": false,
+                                "default_value": 3,
+                                "interval": {
+                                    "min": 2,
+                                    "max": 10
+                                }
+                            }
+                        },
+                        "database_urls": [
+                            {
+                                "$schema": {
+                                    "kind": "string",
+                                    "required": true,
+                                    "default_value": "http://localhost:1234",
+                                    "regex": "^http://[a-z]+:[0-9]{2,4}$"
+                                }
+                            }
+                        ],
+                        "custom_service": {
+                            "urls": [
+                                {
+                                    "$schema": {
+                                        "kind": "string",
+                                        "required": true,
+                                        "default_value": "http://localhost",
+                                        "regex": "^http://[a-z]+0[0-9]{1}$"
+                                    }
+                                }
+                            ],
+                            "port": {
+                                "$schema": {
+                                    "kind": "int",
+                                    "required": false,
+                                    "default_value": 1234,
+                                    "interval": {
+                                        "min": 1024
+                                    }
+                                }
+                            }
+                        },
+                        "extra_services": [
+                            {
+                                "id": {
+                                    "$schema": {
+                                        "kind": "int",
+                                        "required": true
+                                    }
+                                },
+                                "name": {
+                                    "$schema": {
+                                        "kind": "string",
+                                        "required": false
+                                    }
+                                }
+                            }
+                        ]
+                    }"#,
                 )
                 .unwrap(),
             Prop::Object(BTreeMap::from([
@@ -188,6 +224,43 @@ mod tests {
                         )
                         .unwrap(),
                     )
+                ),
+                (
+                    "custom_service".to_string(),
+                    Prop::object(BTreeMap::from([
+                        (
+                            "urls".to_string(),
+                            Prop::array(
+                                Prop::string(
+                                    true,
+                                    Some(Value::String("http://localhost".to_string())),
+                                    None,
+                                    Some("^http://[a-z]+0[0-9]{1}$".to_string()),
+                                )
+                                .unwrap(),
+                            ),
+                        ),
+                        (
+                            "port".to_string(),
+                            Prop::int(
+                                false,
+                                Some(Value::Int(1234)),
+                                None,
+                                Some(Interval::new(1024, None).unwrap()),
+                            )
+                            .unwrap(),
+                        )
+                    ]))
+                ),
+                (
+                    "extra_services".to_string(),
+                    Prop::array(Prop::object(BTreeMap::from([
+                        ("id".to_string(), Prop::int(true, None, None, None).unwrap()),
+                        (
+                            "name".to_string(),
+                            Prop::string(false, None, None, None).unwrap(),
+                        ),
+                    ])),),
                 )
             ])),
         );
