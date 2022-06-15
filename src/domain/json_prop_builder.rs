@@ -22,7 +22,7 @@ struct JsonPropInterval {
 
 #[derive(Serialize, Deserialize)]
 struct JsonProp {
-    kind: String,
+    kind: JsonPropKind,
     required: bool,
     default_value: Option<JsonValue>,
     allowed_values: Option<Vec<JsonValue>>,
@@ -70,16 +70,17 @@ impl PropBuilder<JsonValue> for JsonPropBuilder {
                         .map(|interval| Interval::new::<f64, _, _>(interval.min, interval.max))
                         .transpose()?;
 
-                    return match prop.kind.to_lowercase().as_str() {
-                        "bool" => Prop::bool(prop.required, default_value),
-                        "int" => Prop::int(prop.required, default_value, allowed_values, interval),
-                        "float" => {
+                    return match prop.kind {
+                        JsonPropKind::Bool => Prop::bool(prop.required, default_value),
+                        JsonPropKind::Int => {
+                            Prop::int(prop.required, default_value, allowed_values, interval)
+                        }
+                        JsonPropKind::Float => {
                             Prop::float(prop.required, default_value, allowed_values, interval)
                         }
-                        "string" => {
+                        JsonPropKind::String => {
                             Prop::string(prop.required, default_value, allowed_values, prop.regex)
                         }
-                        _ => Err(Error::Generic),
                     };
                 }
 
