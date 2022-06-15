@@ -55,41 +55,37 @@ impl PropBuilder<JsonValue> for JsonPropBuilder {
 
     fn build(&self, props: JsonValue) -> Result<Prop, Self::Error> {
         match props {
-            JsonValue::Object(map) => {
+            JsonValue::Object(mut map) => {
+                // $schema
+                if let Some(value) = map.remove(Self::SCHEMA_KEY) {
+                    let prop: JsonProp =
+                        serde_json::from_value(value).map_err(|_| Error::Generic)?;
+
+                    let default_value = prop.default_value.map(Value::from);
+                    let allowed_values = prop
+                        .allowed_values
+                        .map(|values| values.into_iter().map(Value::from).collect());
+                    let interval = prop
+                        .interval
+                        .map(|interval| Interval::new::<f64, _, _>(interval.min, interval.max))
+                        .transpose()?;
+
+                    return match prop.kind.to_lowercase().as_str() {
+                        "bool" => Prop::bool(prop.required, default_value),
+                        "int" => Prop::int(prop.required, default_value, allowed_values, interval),
+                        "float" => {
+                            Prop::float(prop.required, default_value, allowed_values, interval)
+                        }
+                        "string" => {
+                            Prop::string(prop.required, default_value, allowed_values, prop.regex)
+                        }
+                        _ => Err(Error::Generic),
+                    };
+                }
+
+                // Object
                 let mut object = BTreeMap::new();
-
                 for (key, value) in map.into_iter() {
-                    if key == Self::SCHEMA_KEY {
-                        let prop: JsonProp =
-                            serde_json::from_value(value).map_err(|_| Error::Generic)?;
-
-                        let default_value = prop.default_value.map(Value::from);
-                        let allowed_values = prop
-                            .allowed_values
-                            .map(|values| values.into_iter().map(Value::from).collect());
-                        let interval = prop
-                            .interval
-                            .map(|interval| Interval::new::<f64, _, _>(interval.min, interval.max))
-                            .transpose()?;
-
-                        return match prop.kind.to_lowercase().as_str() {
-                            "bool" => Prop::bool(prop.required, default_value),
-                            "int" => {
-                                Prop::int(prop.required, default_value, allowed_values, interval)
-                            }
-                            "float" => {
-                                Prop::float(prop.required, default_value, allowed_values, interval)
-                            }
-                            "string" => Prop::string(
-                                prop.required,
-                                default_value,
-                                allowed_values,
-                                prop.regex,
-                            ),
-                            _ => Err(Error::Generic),
-                        };
-                    }
-
                     object.insert(key, self.build(value)?);
                 }
 
