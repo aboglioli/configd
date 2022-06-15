@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use std::collections::HashMap;
 
 use crate::domain::{Error, Prop, Value};
 
@@ -46,14 +45,14 @@ pub struct Schema {
     id: SchemaId,
     name: String,
 
-    props: HashMap<String, Prop>,
+    root_prop: Option<Prop>,
 }
 
 impl Schema {
     pub fn new<N: Into<String>>(
         id: SchemaId,
         name: N,
-        props: HashMap<String, Prop>,
+        root_prop: Option<Prop>,
     ) -> Result<Schema, Error> {
         let name = name.into();
 
@@ -61,11 +60,15 @@ impl Schema {
             return Err(Error::Generic);
         }
 
-        Ok(Schema { id, name, props })
+        Ok(Schema {
+            id,
+            name,
+            root_prop,
+        })
     }
 
     pub fn create<N: Into<String>>(id: SchemaId, name: N) -> Result<Schema, Error> {
-        Schema::new(id, name, HashMap::new())
+        Schema::new(id, name, None)
     }
 
     pub fn id(&self) -> &SchemaId {
@@ -76,30 +79,29 @@ impl Schema {
         &self.name
     }
 
-    pub fn props(&self) -> &HashMap<String, Prop> {
-        &self.props
+    pub fn root_prop(&self) -> Option<&Prop> {
+        self.root_prop.as_ref()
     }
 
-    pub fn add_prop<K: Into<String>>(mut self, key: K, prop: Prop) -> Result<Schema, Error> {
-        self.props.insert(key.into(), prop);
-
-        Ok(self)
+    pub fn change_root_prop<K: Into<String>>(&mut self, prop: Prop) -> Result<(), Error> {
+        self.root_prop = Some(prop);
+        Ok(())
     }
 
-    pub fn validate(&self, values: &HashMap<String, Value>) -> bool {
-        values.iter().all(|(key, value)| {
-            if let Some(prop) = self.props.get(key) {
-                prop.validate(value)
-            } else {
-                false
-            }
-        }) && self.props.iter().all(|(key, _)| values.contains_key(key))
+    pub fn validate(&self, value: &Value) -> bool {
+        if let Some(prop) = &self.root_prop {
+            prop.validate(value)
+        } else {
+            false
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use std::collections::BTreeMap;
 
     use crate::domain::Interval;
 
@@ -109,7 +111,7 @@ mod tests {
 
         assert_eq!(schema.id().value(), "schema#01");
         assert_eq!(schema.name(), "Schema 01");
-        assert!(schema.props().is_empty());
+        assert!(schema.root_prop().is_none());
     }
 
     #[test]
@@ -117,7 +119,7 @@ mod tests {
         let schema = Schema::new(
             SchemaId::new("schema#01").unwrap(),
             "Schema 01",
-            HashMap::from([
+            Some(Prop::object(BTreeMap::from([
                 (
                     "env".to_string(),
                     Prop::string(
@@ -136,35 +138,35 @@ mod tests {
                     "num".to_string(),
                     Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap())).unwrap(),
                 ),
-            ]),
+            ]))),
         )
         .unwrap();
 
-        assert!(schema.validate(&HashMap::from([
+        assert!(schema.validate(&Value::Object(BTreeMap::from([
             ("env".to_string(), Value::String("stg".to_string())),
             ("num".to_string(), Value::Int(4)),
-        ])));
+        ]))));
 
-        assert!(schema.validate(&HashMap::from([
+        assert!(schema.validate(&Value::Object(BTreeMap::from([
             ("env".to_string(), Value::String("stg".to_string())),
             ("num".to_string(), Value::Int(4)),
-        ])));
-        assert!(!schema.validate(&HashMap::from([
+        ]))));
+        assert!(!schema.validate(&Value::Object(BTreeMap::from([
             ("env".to_string(), Value::String("other".to_string())),
             ("num".to_string(), Value::Int(4)),
-        ])));
-        assert!(!schema.validate(&HashMap::from([
+        ]))));
+        assert!(!schema.validate(&Value::Object(BTreeMap::from([
             ("env".to_string(), Value::String("stg".to_string())),
             ("num".to_string(), Value::Int(9)),
-        ])));
-        assert!(!schema.validate(&HashMap::from([(
+        ]),)));
+        assert!(!schema.validate(&Value::Object(BTreeMap::from([(
             "env".to_string(),
             Value::String("stg".to_string())
-        )])));
-        assert!(!schema.validate(&HashMap::from([
+        )]))));
+        assert!(!schema.validate(&Value::Object(BTreeMap::from([
             ("env".to_string(), Value::String("stg".to_string())),
             ("num".to_string(), Value::Int(4)),
             ("non_existing".to_string(), Value::Int(1)),
-        ])));
+        ]))));
     }
 }
