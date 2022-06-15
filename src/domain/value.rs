@@ -1,4 +1,4 @@
-use serde_json::Value as JsonValue;
+use serde_json::{Map, Number, Value as JsonValue};
 use std::collections::{BTreeMap, HashMap};
 
 // Value & Kind
@@ -145,6 +145,31 @@ impl From<JsonValue> for Value {
     }
 }
 
+impl From<Value> for JsonValue {
+    fn from(value: Value) -> Self {
+        match value {
+            Value::Null => JsonValue::Null,
+            Value::Bool(value) => JsonValue::Bool(value),
+            Value::Int(value) => JsonValue::Number(value.into()),
+            Value::Float(value) => {
+                if let Some(value) = Number::from_f64(value) {
+                    JsonValue::Number(value)
+                } else {
+                    JsonValue::Null
+                }
+            }
+            Value::String(value) => JsonValue::String(value),
+            Value::Array(items) => JsonValue::Array(items.into_iter().map(From::from).collect()),
+            Value::Object(map) => JsonValue::Object(
+                map.into_iter()
+                    .map(|(key, value)| (key, value.into()))
+                    .collect(),
+            ),
+            _ => JsonValue::Null,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -206,6 +231,39 @@ mod tests {
                 (
                     "arr".to_string(),
                     Value::Array(vec![Value::String("item_1".to_string())])
+                ),
+            ])),
+        );
+
+        // Serialize
+        let value = Value::Object(BTreeMap::from([
+            ("str".to_string(), Value::String("str".to_string())),
+            ("int".to_string(), Value::Int(123)),
+            ("float".to_string(), Value::Float(3.14)),
+            (
+                "arr".to_string(),
+                Value::Array(vec![Value::String("item_1".to_string())]),
+            ),
+        ]));
+        let json_value: JsonValue = value.into();
+        let json = serde_json::to_string(&json_value).unwrap();
+        assert_eq!(
+            json,
+            r#"{"arr":["item_1"],"float":3.14,"int":123,"str":"str"}"#,
+        );
+
+        // Deserialize
+        let json_value: JsonValue = serde_json::from_str(&json).unwrap();
+        let value: Value = json_value.into();
+        assert_eq!(
+            value,
+            Value::Object(BTreeMap::from([
+                ("str".to_string(), Value::String("str".to_string())),
+                ("int".to_string(), Value::Int(123)),
+                ("float".to_string(), Value::Float(3.14)),
+                (
+                    "arr".to_string(),
+                    Value::Array(vec![Value::String("item_1".to_string())]),
                 ),
             ])),
         );
