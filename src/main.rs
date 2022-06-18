@@ -22,6 +22,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(handlers::health))
         .route("/schema", post(handlers::create_schema))
+        .route("/schema/:schema_id", get(handlers::get_schema_by_id))
         .layer(Extension(container));
 
     let addr = format!("{}:{}", config.host, config.port);
