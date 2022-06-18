@@ -46,6 +46,10 @@ impl Schema {
         &self.root_prop
     }
 
+    pub fn into_root_prop(self) -> Prop {
+        self.root_prop
+    }
+
     pub fn change_root_prop(&mut self, prop: Prop) -> Result<(), Error> {
         self.root_prop = prop;
         Ok(())
