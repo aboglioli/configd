@@ -1,7 +1,6 @@
-use async_trait::async_trait;
+use crate::domain::Error;
 
-use crate::domain::{Error, Prop, Value};
-
+#[derive(Debug, Clone, PartialEq)]
 pub struct SchemaId {
     id: String,
 }
