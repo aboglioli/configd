@@ -1,18 +1,32 @@
+mod application;
+mod config;
+mod container;
 mod domain;
+mod handlers;
+mod infrastructure;
 
-use axum::{routing::get, Router, Server};
-use std::net::SocketAddr;
+use axum::{
+    routing::{get, post},
+    Extension, Router, Server,
+};
+use std::sync::Arc;
 
-async fn root() -> &'static str {
-    "Hello, World!"
-}
+use crate::{config::Config, container::Container};
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new().route("/", get(|| async { "Hello World" }));
+    let config = Config::load().unwrap();
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    Server::bind(&addr)
+    let container = Arc::new(Container::build(&config).unwrap());
+
+    let app = Router::new()
+        .route("/health", get(handlers::health))
+        .route("/schema", post(handlers::create_schema))
+        .layer(Extension(container));
+
+    let addr = format!("{}:{}", config.host, config.port);
+    println!("Listening on {}", addr);
+    Server::bind(&addr.parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
