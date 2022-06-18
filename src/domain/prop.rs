@@ -7,7 +7,7 @@ pub trait PropConverter<T> {
     type Error;
 
     fn from(&self, props: T) -> Result<Prop, Self::Error>;
-    fn to(&self, prop: &Prop) -> Result<T, Self::Error>;
+    fn to(&self, prop: Prop) -> Result<T, Self::Error>;
 }
 
 #[derive(Debug, PartialEq, Clone)]
