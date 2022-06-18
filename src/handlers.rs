@@ -16,7 +16,7 @@ pub async fn create_schema(
     Extension(container): Extension<Arc<Container>>,
 ) -> impl IntoResponse {
     let serv = CreateSchema::new(
-        container.prop_builder.clone(),
+        container.prop_converter.clone(),
         container.schema_repository.clone(),
     );
 

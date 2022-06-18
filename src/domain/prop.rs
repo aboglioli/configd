@@ -3,10 +3,11 @@ use std::collections::BTreeMap;
 
 use crate::domain::{Error, Interval, Kind, Value};
 
-pub trait PropBuilder<T> {
+pub trait PropConverter<T> {
     type Error;
 
-    fn build(&self, props: T) -> Result<Prop, Self::Error>;
+    fn from(&self, props: T) -> Result<Prop, Self::Error>;
+    fn to(&self, prop: &Prop) -> Result<T, Self::Error>;
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -255,7 +256,6 @@ impl Prop {
 
                 false
             }
-            _ => false,
         }
     }
 }

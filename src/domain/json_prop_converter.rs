@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::BTreeMap;
 
-use crate::domain::{Error, Interval, Prop, PropBuilder, Value};
+use crate::domain::{Error, Interval, Prop, PropConverter, Value};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -30,30 +30,36 @@ struct JsonProp {
     regex: Option<String>,
 }
 
-pub struct JsonPropBuilder;
+pub struct JsonPropConverter;
 
-impl JsonPropBuilder {
+impl JsonPropConverter {
     const SCHEMA_KEY: &'static str = "$schema";
 
-    pub fn new() -> JsonPropBuilder {
-        JsonPropBuilder
+    pub fn new() -> JsonPropConverter {
+        JsonPropConverter
     }
 }
 
-impl PropBuilder<&str> for JsonPropBuilder {
+impl PropConverter<String> for JsonPropConverter {
     type Error = Error;
 
-    fn build(&self, props: &str) -> Result<Prop, Self::Error> {
-        let value: JsonValue = serde_json::from_str(props).map_err(|_| Error::Generic)?;
+    fn from(&self, props: String) -> Result<Prop, Self::Error> {
+        let value: JsonValue = serde_json::from_str(&props).map_err(|_| Error::Generic)?;
 
-        self.build(value)
+        self.from(value)
+    }
+
+    fn to(&self, prop: &Prop) -> Result<String, Self::Error> {
+        let value: JsonValue = self.to(prop)?;
+
+        serde_json::to_string(&value).map_err(|_| Error::Generic)
     }
 }
 
-impl PropBuilder<JsonValue> for JsonPropBuilder {
+impl PropConverter<JsonValue> for JsonPropConverter {
     type Error = Error;
 
-    fn build(&self, props: JsonValue) -> Result<Prop, Self::Error> {
+    fn from(&self, props: JsonValue) -> Result<Prop, Self::Error> {
         match props {
             JsonValue::Object(mut map) => {
                 // $schema
@@ -87,7 +93,7 @@ impl PropBuilder<JsonValue> for JsonPropBuilder {
                 // Object
                 let mut object = BTreeMap::new();
                 for (key, value) in map.into_iter() {
-                    object.insert(key, self.build(value)?);
+                    object.insert(key, self.from(value)?);
                 }
 
                 return Ok(Prop::object(object));
@@ -97,10 +103,14 @@ impl PropBuilder<JsonValue> for JsonPropBuilder {
                     return Err(Error::Generic);
                 }
 
-                Ok(Prop::array(self.build(items.remove(0))?))
+                Ok(Prop::array(self.from(items.remove(0))?))
             }
             _ => Err(Error::Generic),
         }
+    }
+
+    fn to(&self, prop: &Prop) -> Result<JsonValue, Error> {
+        Err(Error::Generic)
     }
 }
 
@@ -110,81 +120,79 @@ mod tests {
 
     #[test]
     fn build_from_json_string() {
-        let builder = JsonPropBuilder::new();
+        let builder = JsonPropConverter::new();
+        let json = r#"{
+            "env": {
+                "$schema": {
+                    "kind": "string",
+                    "required": true,
+                    "allowed_values": ["dev", "stg", "prod"]
+                }
+            },
+            "instances": {
+                "$schema": {
+                    "kind": "int",
+                    "required": false,
+                    "default_value": 3,
+                    "interval": {
+                        "min": 2,
+                        "max": 10
+                    }
+                }
+            },
+            "database_urls": [
+                {
+                    "$schema": {
+                        "kind": "string",
+                        "required": true,
+                        "default_value": "http://localhost:1234",
+                        "regex": "^http://[a-z]+:[0-9]{2,4}$"
+                    }
+                }
+            ],
+            "custom_service": {
+                "urls": [
+                    {
+                        "$schema": {
+                            "kind": "string",
+                            "required": true,
+                            "default_value": "http://localhost",
+                            "regex": "^http://[a-z]+0[0-9]{1}$"
+                        }
+                    }
+                ],
+                "port": {
+                    "$schema": {
+                        "kind": "int",
+                        "required": false,
+                        "default_value": 1234,
+                        "interval": {
+                            "min": 1024
+                        }
+                    }
+                }
+            },
+            "extra_services": [
+                {
+                    "id": {
+                        "$schema": {
+                            "kind": "int",
+                            "required": true
+                        }
+                    },
+                    "name": {
+                        "$schema": {
+                            "kind": "string",
+                            "required": false
+                        }
+                    }
+                }
+            ]
+        }"#
+        .to_string();
 
         assert_eq!(
-            builder
-                .build(
-                    r#"{
-                        "env": {
-                            "$schema": {
-                                "kind": "string",
-                                "required": true,
-                                "allowed_values": ["dev", "stg", "prod"]
-                            }
-                        },
-                        "instances": {
-                            "$schema": {
-                                "kind": "int",
-                                "required": false,
-                                "default_value": 3,
-                                "interval": {
-                                    "min": 2,
-                                    "max": 10
-                                }
-                            }
-                        },
-                        "database_urls": [
-                            {
-                                "$schema": {
-                                    "kind": "string",
-                                    "required": true,
-                                    "default_value": "http://localhost:1234",
-                                    "regex": "^http://[a-z]+:[0-9]{2,4}$"
-                                }
-                            }
-                        ],
-                        "custom_service": {
-                            "urls": [
-                                {
-                                    "$schema": {
-                                        "kind": "string",
-                                        "required": true,
-                                        "default_value": "http://localhost",
-                                        "regex": "^http://[a-z]+0[0-9]{1}$"
-                                    }
-                                }
-                            ],
-                            "port": {
-                                "$schema": {
-                                    "kind": "int",
-                                    "required": false,
-                                    "default_value": 1234,
-                                    "interval": {
-                                        "min": 1024
-                                    }
-                                }
-                            }
-                        },
-                        "extra_services": [
-                            {
-                                "id": {
-                                    "$schema": {
-                                        "kind": "int",
-                                        "required": true
-                                    }
-                                },
-                                "name": {
-                                    "$schema": {
-                                        "kind": "string",
-                                        "required": false
-                                    }
-                                }
-                            }
-                        ]
-                    }"#,
-                )
-                .unwrap(),
+            builder.from(json).unwrap(),
             Prop::Object(BTreeMap::from([
                 (
                     "env".to_string(),
