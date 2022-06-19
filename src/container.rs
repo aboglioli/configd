@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::{
     config::{Config, Storage},
-    domain::{Error, JsonPropConverter},
-    infrastructure::InMemSchemaRepository,
+    domain::Error,
+    infrastructure::{InMemSchemaRepository, JsonPropConverter},
 };
 
 pub struct Container {
