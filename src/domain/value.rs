@@ -165,7 +165,6 @@ impl From<Value> for JsonValue {
                     .map(|(key, value)| (key, value.into()))
                     .collect(),
             ),
-            _ => JsonValue::Null,
         }
     }
 }
