@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::domain::{Error, Prop, SchemaId, Value};
+use crate::domain::{Diff, Error, Prop, SchemaId, Value};
 
 #[async_trait]
 pub trait SchemaRepository {
@@ -55,7 +55,7 @@ impl Schema {
         Ok(())
     }
 
-    pub fn validate(&self, value: &Value) -> bool {
+    pub fn validate(&self, value: &Value) -> Diff {
         self.root_prop.validate(value)
     }
 }
@@ -106,31 +106,43 @@ mod tests {
         )
         .unwrap();
 
-        assert!(schema.validate(&Value::Object(BTreeMap::from([
-            ("env".to_string(), Value::String("stg".to_string())),
-            ("num".to_string(), Value::Int(4)),
-        ]))));
+        assert!(schema
+            .validate(&Value::Object(BTreeMap::from([
+                ("env".to_string(), Value::String("stg".to_string())),
+                ("num".to_string(), Value::Int(4)),
+            ])))
+            .is_empty());
 
-        assert!(schema.validate(&Value::Object(BTreeMap::from([
-            ("env".to_string(), Value::String("stg".to_string())),
-            ("num".to_string(), Value::Int(4)),
-        ]))));
-        assert!(!schema.validate(&Value::Object(BTreeMap::from([
-            ("env".to_string(), Value::String("other".to_string())),
-            ("num".to_string(), Value::Int(4)),
-        ]))));
-        assert!(!schema.validate(&Value::Object(BTreeMap::from([
-            ("env".to_string(), Value::String("stg".to_string())),
-            ("num".to_string(), Value::Int(9)),
-        ]),)));
-        assert!(!schema.validate(&Value::Object(BTreeMap::from([(
-            "env".to_string(),
-            Value::String("stg".to_string())
-        )]))));
-        assert!(!schema.validate(&Value::Object(BTreeMap::from([
-            ("env".to_string(), Value::String("stg".to_string())),
-            ("num".to_string(), Value::Int(4)),
-            ("non_existing".to_string(), Value::Int(1)),
-        ]))));
+        assert!(schema
+            .validate(&Value::Object(BTreeMap::from([
+                ("env".to_string(), Value::String("stg".to_string())),
+                ("num".to_string(), Value::Int(4)),
+            ])))
+            .is_empty());
+        assert!(!schema
+            .validate(&Value::Object(BTreeMap::from([
+                ("env".to_string(), Value::String("other".to_string())),
+                ("num".to_string(), Value::Int(4)),
+            ])))
+            .is_empty());
+        assert!(!schema
+            .validate(&Value::Object(BTreeMap::from([
+                ("env".to_string(), Value::String("stg".to_string())),
+                ("num".to_string(), Value::Int(9)),
+            ])))
+            .is_empty());
+        assert!(!schema
+            .validate(&Value::Object(BTreeMap::from([(
+                "env".to_string(),
+                Value::String("stg".to_string())
+            )])))
+            .is_empty());
+        assert!(!schema
+            .validate(&Value::Object(BTreeMap::from([
+                ("env".to_string(), Value::String("stg".to_string())),
+                ("num".to_string(), Value::Int(4)),
+                ("non_existing".to_string(), Value::Int(1)),
+            ])))
+            .is_empty());
     }
 }
