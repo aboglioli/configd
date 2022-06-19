@@ -6,12 +6,29 @@ use axum::{
 use std::sync::Arc;
 
 use crate::{
-    application::{CreateSchema, CreateSchemaCommand, GetSchemaById, GetSchemaByIdCommand},
+    application::{
+        CreateSchema, CreateSchemaCommand, DeleteSchema, DeleteSchemaCommand, GetSchema,
+        GetSchemaCommand,
+    },
     container::Container,
 };
 
 pub async fn health() -> &'static str {
     "OK"
+}
+
+pub async fn get_schema_by_id(
+    Path(schema_id): Path<String>,
+    Extension(container): Extension<Arc<Container>>,
+) -> impl IntoResponse {
+    let serv = GetSchema::new(
+        container.prop_converter.clone(),
+        container.schema_repository.clone(),
+    );
+
+    let res = serv.exec(GetSchemaCommand { id: schema_id }).await.unwrap();
+
+    (StatusCode::OK, Json(res))
 }
 
 pub async fn create_schema(
@@ -28,17 +45,14 @@ pub async fn create_schema(
     (StatusCode::CREATED, Json(res))
 }
 
-pub async fn get_schema_by_id(
+pub async fn delete_schema(
     Path(schema_id): Path<String>,
     Extension(container): Extension<Arc<Container>>,
 ) -> impl IntoResponse {
-    let serv = GetSchemaById::new(
-        container.prop_converter.clone(),
-        container.schema_repository.clone(),
-    );
+    let serv = DeleteSchema::new(container.schema_repository.clone());
 
     let res = serv
-        .exec(GetSchemaByIdCommand { id: schema_id })
+        .exec(DeleteSchemaCommand { id: schema_id })
         .await
         .unwrap();
 
