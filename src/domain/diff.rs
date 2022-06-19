@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Reason {
     NullValue,
     NotAllowedValue,
@@ -84,5 +84,10 @@ mod tests {
         let diffs = diff.diffs();
         assert_eq!(diffs.len(), 3);
         assert_eq!(diffs.get("$.env").unwrap(), &vec![Reason::NotAString]);
+        assert_eq!(diffs.get("$.port").unwrap(), &vec![Reason::NotInInterval]);
+        assert_eq!(
+            diffs.get("$.database_urls.host").unwrap(),
+            &vec![Reason::UnmatchedRegex]
+        );
     }
 }

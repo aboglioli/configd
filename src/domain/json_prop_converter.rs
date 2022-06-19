@@ -101,7 +101,7 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                     object.insert(key, self.from(value)?);
                 }
 
-                return Ok(Prop::object(object));
+                Ok(Prop::object(object))
             }
             JsonValue::Array(mut items) => {
                 if items.len() != 1 {

@@ -279,7 +279,7 @@ impl Prop {
             }
         }
 
-        return diff;
+        diff
     }
 }
 
@@ -464,6 +464,13 @@ mod tests {
                     Prop::string(true, None, None, Some("^asd[0-9]+$".to_string())).unwrap(),
                 ),
             ),
+            (
+                "arr_obj".to_string(),
+                Prop::array(Prop::object(BTreeMap::from([(
+                    "prop".to_string(),
+                    Prop::bool(true, None).unwrap(),
+                )]))),
+            ),
         ]));
 
         let diff = prop.validate(&Value::Object(BTreeMap::from([
@@ -481,6 +488,13 @@ mod tests {
                 "arr".to_string(),
                 Value::Array(vec![Value::String("asd".to_string()), Value::Null]),
             ),
+            (
+                "arr_obj".to_string(),
+                Value::Array(vec![Value::Object(BTreeMap::from([(
+                    "prop".to_string(),
+                    Value::Int(2),
+                )]))]),
+            ),
         ])));
 
         assert_eq!(
@@ -497,6 +511,7 @@ mod tests {
                 ("$.obj.prop5".to_string(), vec![Reason::UnknownProp]),
                 ("$.arr.0".to_string(), vec![Reason::UnmatchedRegex]),
                 ("$.arr.1".to_string(), vec![Reason::NullValue]),
+                ("$.arr_obj.0.prop".to_string(), vec![Reason::NotABool]),
             ])
         )
     }

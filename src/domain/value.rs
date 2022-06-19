@@ -2,7 +2,7 @@ use serde_json::{Number, Value as JsonValue};
 use std::collections::{BTreeMap, HashMap};
 
 // Value & Kind
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Kind {
     Null,
     Bool,
