@@ -1,6 +1,8 @@
+use serde::Serialize;
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Reason {
     NullValue,
     NotAllowedValue,
@@ -36,6 +38,10 @@ impl Diff {
 
     pub fn diffs(&self) -> &HashMap<String, Vec<Reason>> {
         &self.diffs
+    }
+
+    pub fn into_diffs(self) -> HashMap<String, Vec<Reason>> {
+        self.diffs
     }
 
     pub fn is_empty(&self) -> bool {

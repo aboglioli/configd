@@ -26,6 +26,10 @@ async fn main() {
             "/schema/:schema_id",
             get(handlers::get_schema_by_id).delete(handlers::delete_schema),
         )
+        .route(
+            "/schema/:schema_id/validate",
+            post(handlers::validate_config),
+        )
         .layer(Extension(container));
 
     let addr = format!("{}:{}", config.host, config.port);

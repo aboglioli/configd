@@ -8,7 +8,7 @@ use std::sync::Arc;
 use crate::{
     application::{
         CreateSchema, CreateSchemaCommand, DeleteSchema, DeleteSchemaCommand, GetSchema,
-        GetSchemaCommand,
+        GetSchemaCommand, ValidateConfig, ValidateConfigCommand,
     },
     container::Container,
 };
@@ -55,6 +55,17 @@ pub async fn delete_schema(
         .exec(DeleteSchemaCommand { id: schema_id })
         .await
         .unwrap();
+
+    (StatusCode::OK, Json(res))
+}
+
+pub async fn validate_config(
+    Json(cmd): Json<ValidateConfigCommand>,
+    Extension(container): Extension<Arc<Container>>,
+) -> impl IntoResponse {
+    let serv = ValidateConfig::new(container.schema_repository.clone());
+
+    let res = serv.exec(cmd).await.unwrap();
 
     (StatusCode::OK, Json(res))
 }
