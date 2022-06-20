@@ -60,9 +60,12 @@ pub async fn delete_schema(
 }
 
 pub async fn validate_config(
-    Json(cmd): Json<ValidateConfigCommand>,
+    Path(schema_id): Path<String>,
+    Json(mut cmd): Json<ValidateConfigCommand>,
     Extension(container): Extension<Arc<Container>>,
 ) -> impl IntoResponse {
+    cmd.schema_id = schema_id;
+
     let serv = ValidateConfig::new(container.schema_repository.clone());
 
     let res = serv.exec(cmd).await.unwrap();

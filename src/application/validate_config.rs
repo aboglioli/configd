@@ -6,6 +6,7 @@ use crate::domain::{Error, Reason, SchemaId, SchemaRepository, Value};
 
 #[derive(Deserialize)]
 pub struct ValidateConfigCommand {
+    #[serde(skip_deserializing)]
     pub schema_id: String,
     pub config: JsonValue,
 }
