@@ -8,7 +8,7 @@ use crate::domain::{Error, Reason, SchemaId, SchemaRepository, Value};
 pub struct ValidateConfigCommand {
     #[serde(skip_deserializing)]
     pub schema_id: String,
-    pub config: JsonValue,
+    pub data: JsonValue,
 }
 
 #[derive(Serialize)]
@@ -30,7 +30,7 @@ impl ValidateConfig {
         let schema_id = SchemaId::new(cmd.schema_id)?;
 
         if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            let config = Value::from(cmd.config);
+            let config = Value::from(cmd.data);
 
             let diff = schema.validate(&config);
 
