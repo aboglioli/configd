@@ -5,12 +5,12 @@ use crate::domain::{Error, Id, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct DeleteSchemaCommand {
-    pub id: String,
+    pub schema_id: String,
 }
 
 #[derive(Serialize)]
 pub struct DeleteSchemaResponse {
-    pub id: String,
+    pub schema_id: String,
 }
 
 pub struct DeleteSchema {
@@ -23,7 +23,7 @@ impl DeleteSchema {
     }
 
     pub async fn exec(&self, cmd: DeleteSchemaCommand) -> Result<DeleteSchemaResponse, Error> {
-        let schema_id = Id::new(cmd.id)?;
+        let schema_id = Id::new(cmd.schema_id)?;
 
         self.schema_repository.delete(&schema_id).await?;
 

@@ -1,6 +1,6 @@
 use crate::domain::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Id {
     id: String,
 }

@@ -7,16 +7,18 @@ use std::sync::Arc;
 
 use crate::{
     application::{
-        CreateSchema, CreateSchemaCommand, DeleteSchema, DeleteSchemaCommand, GetSchema,
-        GetSchemaCommand, ValidateConfig, ValidateConfigCommand,
+        CreateConfig, CreateConfigCommand, CreateSchema, CreateSchemaCommand, DeleteSchema,
+        DeleteSchemaCommand, GetSchema, GetSchemaCommand, ValidateConfig, ValidateConfigCommand,
     },
     container::Container,
 };
 
+// General
 pub async fn health() -> &'static str {
     "OK"
 }
 
+// Schema
 pub async fn get_schema_by_id(
     Path(schema_id): Path<String>,
     Extension(container): Extension<Arc<Container>>,
@@ -26,7 +28,7 @@ pub async fn get_schema_by_id(
         container.schema_repository.clone(),
     );
 
-    let res = serv.exec(GetSchemaCommand { id: schema_id }).await.unwrap();
+    let res = serv.exec(GetSchemaCommand { schema_id }).await.unwrap();
 
     (StatusCode::OK, Json(res))
 }
@@ -51,14 +53,12 @@ pub async fn delete_schema(
 ) -> impl IntoResponse {
     let serv = DeleteSchema::new(container.schema_repository.clone());
 
-    let res = serv
-        .exec(DeleteSchemaCommand { id: schema_id })
-        .await
-        .unwrap();
+    let res = serv.exec(DeleteSchemaCommand { schema_id }).await.unwrap();
 
     (StatusCode::OK, Json(res))
 }
 
+// Config
 pub async fn validate_config(
     Path(schema_id): Path<String>,
     Json(mut cmd): Json<ValidateConfigCommand>,
@@ -67,6 +67,20 @@ pub async fn validate_config(
     cmd.schema_id = schema_id;
 
     let serv = ValidateConfig::new(container.schema_repository.clone());
+
+    let res = serv.exec(cmd).await.unwrap();
+
+    (StatusCode::OK, Json(res))
+}
+
+pub async fn create_config(
+    Path(schema_id): Path<String>,
+    Json(mut cmd): Json<CreateConfigCommand>,
+    Extension(container): Extension<Arc<Container>>,
+) -> impl IntoResponse {
+    cmd.schema_id = schema_id;
+
+    let serv = CreateConfig::new(container.schema_repository.clone());
 
     let res = serv.exec(cmd).await.unwrap();
 

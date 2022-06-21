@@ -30,9 +30,7 @@ impl ValidateConfig {
         let schema_id = Id::new(cmd.schema_id)?;
 
         if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            let config = Value::from(cmd.data);
-
-            let diff = schema.validate(&config);
+            let diff = schema.root_prop().validate(&cmd.data.into());
 
             return Ok(ValidateConfigResponse {
                 valid: diff.is_empty(),

@@ -1,6 +1,7 @@
 use async_trait::async_trait;
+use std::collections::HashMap;
 
-use crate::domain::{Diff, Error, Id, Prop, Value};
+use crate::domain::{Config, Diff, Error, Id, Prop, Value};
 
 #[async_trait]
 pub trait SchemaRepository {
@@ -15,10 +16,17 @@ pub struct Schema {
     name: String,
 
     root_prop: Prop,
+
+    configs: HashMap<Id, Config>,
 }
 
 impl Schema {
-    pub fn new(id: Id, name: String, root_prop: Prop) -> Result<Schema, Error> {
+    pub fn new(
+        id: Id,
+        name: String,
+        root_prop: Prop,
+        configs: HashMap<Id, Config>,
+    ) -> Result<Schema, Error> {
         if name.is_empty() {
             return Err(Error::Generic);
         }
@@ -27,11 +35,12 @@ impl Schema {
             id,
             name,
             root_prop,
+            configs,
         })
     }
 
     pub fn create(name: String, root_prop: Prop) -> Result<Schema, Error> {
-        Schema::new(Id::slug(&name)?, name, root_prop)
+        Schema::new(Id::slug(&name)?, name, root_prop, HashMap::new())
     }
 
     pub fn id(&self) -> &Id {
@@ -46,17 +55,46 @@ impl Schema {
         &self.root_prop
     }
 
-    pub fn into_root_prop(self) -> Prop {
-        self.root_prop
+    pub fn configs(&self) -> &HashMap<Id, Config> {
+        &self.configs
     }
 
     pub fn change_root_prop(&mut self, prop: Prop) -> Result<(), Error> {
         self.root_prop = prop;
+
         Ok(())
     }
 
-    pub fn validate(&self, value: &Value) -> Diff {
-        self.root_prop.validate(value)
+    pub fn add_config(&mut self, config: Config) -> Result<(), Error> {
+        let diff = self.root_prop.validate(config.data());
+        if !diff.is_empty() {
+            return Err(Error::Generic);
+        }
+
+        self.configs.insert(config.id().clone(), config);
+
+        Ok(())
+    }
+
+    pub fn update_config(&mut self, id: &Id, data: Value) -> Result<(), Error> {
+        if let Some(config) = self.configs.get_mut(id) {
+            let diff = self.root_prop.validate(&data);
+            if !diff.is_empty() {
+                return Err(Error::Generic);
+            }
+
+            config.change_data(data)?;
+
+            return Ok(());
+        }
+
+        Err(Error::Generic)
+    }
+
+    pub fn delete_config(&mut self, id: &Id) -> Result<(), Error> {
+        self.configs.remove(id);
+
+        Ok(())
     }
 }
 
@@ -103,10 +141,12 @@ mod tests {
                     Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap())).unwrap(),
                 ),
             ])),
+            HashMap::new(),
         )
         .unwrap();
 
         assert!(schema
+            .root_prop()
             .validate(&Value::Object(BTreeMap::from([
                 ("env".to_string(), Value::String("stg".to_string())),
                 ("num".to_string(), Value::Int(4)),
@@ -114,30 +154,35 @@ mod tests {
             .is_empty());
 
         assert!(schema
+            .root_prop()
             .validate(&Value::Object(BTreeMap::from([
                 ("env".to_string(), Value::String("stg".to_string())),
                 ("num".to_string(), Value::Int(4)),
             ])))
             .is_empty());
         assert!(!schema
+            .root_prop()
             .validate(&Value::Object(BTreeMap::from([
                 ("env".to_string(), Value::String("other".to_string())),
                 ("num".to_string(), Value::Int(4)),
             ])))
             .is_empty());
         assert!(!schema
+            .root_prop()
             .validate(&Value::Object(BTreeMap::from([
                 ("env".to_string(), Value::String("stg".to_string())),
                 ("num".to_string(), Value::Int(9)),
             ])))
             .is_empty());
         assert!(!schema
+            .root_prop()
             .validate(&Value::Object(BTreeMap::from([(
                 "env".to_string(),
                 Value::String("stg".to_string())
             )])))
             .is_empty());
         assert!(!schema
+            .root_prop()
             .validate(&Value::Object(BTreeMap::from([
                 ("env".to_string(), Value::String("stg".to_string())),
                 ("num".to_string(), Value::Int(4)),

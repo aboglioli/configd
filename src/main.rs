@@ -21,13 +21,14 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(handlers::health))
-        .route("/schema", post(handlers::create_schema))
+        .route("/schemas", post(handlers::create_schema))
         .route(
-            "/schema/:schema_id",
+            "/schemas/:schema_id",
             get(handlers::get_schema_by_id).delete(handlers::delete_schema),
         )
+        .route("/schemas/:schema_id/configs", post(handlers::create_config))
         .route(
-            "/schema/:schema_id/validate",
+            "/schemas/:schema_id/validate",
             post(handlers::validate_config),
         )
         .layer(Extension(container));
