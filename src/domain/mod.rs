@@ -1,3 +1,4 @@
+mod config;
 mod diff;
 mod errors;
 mod id;
@@ -6,6 +7,7 @@ mod prop;
 mod schema;
 mod value;
 
+pub use config::*;
 pub use diff::*;
 pub use errors::*;
 pub use id::*;
