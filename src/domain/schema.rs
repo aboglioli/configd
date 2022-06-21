@@ -1,24 +1,24 @@
 use async_trait::async_trait;
 
-use crate::domain::{Diff, Error, Prop, SchemaId, Value};
+use crate::domain::{Diff, Error, Id, Prop, Value};
 
 #[async_trait]
 pub trait SchemaRepository {
-    async fn find_by_id(&self, id: &SchemaId) -> Result<Option<Schema>, Error>;
+    async fn find_by_id(&self, id: &Id) -> Result<Option<Schema>, Error>;
     async fn save(&self, schema: &mut Schema) -> Result<(), Error>;
-    async fn delete(&self, id: &SchemaId) -> Result<(), Error>;
+    async fn delete(&self, id: &Id) -> Result<(), Error>;
 }
 
 #[derive(Debug, Clone)]
 pub struct Schema {
-    id: SchemaId,
+    id: Id,
     name: String,
 
     root_prop: Prop,
 }
 
 impl Schema {
-    pub fn new(id: SchemaId, name: String, root_prop: Prop) -> Result<Schema, Error> {
+    pub fn new(id: Id, name: String, root_prop: Prop) -> Result<Schema, Error> {
         if name.is_empty() {
             return Err(Error::Generic);
         }
@@ -31,10 +31,10 @@ impl Schema {
     }
 
     pub fn create(name: String, root_prop: Prop) -> Result<Schema, Error> {
-        Schema::new(SchemaId::slug(&name)?, name, root_prop)
+        Schema::new(Id::slug(&name)?, name, root_prop)
     }
 
-    pub fn id(&self) -> &SchemaId {
+    pub fn id(&self) -> &Id {
         &self.id
     }
 
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn validate() {
         let schema = Schema::new(
-            SchemaId::new("schema#01").unwrap(),
+            Id::new("schema#01").unwrap(),
             "Schema 01".to_string(),
             Prop::object(BTreeMap::from([
                 (

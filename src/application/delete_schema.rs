@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::domain::{Error, SchemaId, SchemaRepository};
+use crate::domain::{Error, Id, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct DeleteSchemaCommand {
@@ -23,7 +23,7 @@ impl DeleteSchema {
     }
 
     pub async fn exec(&self, cmd: DeleteSchemaCommand) -> Result<DeleteSchemaResponse, Error> {
-        let schema_id = SchemaId::new(cmd.id)?;
+        let schema_id = Id::new(cmd.id)?;
 
         self.schema_repository.delete(&schema_id).await?;
 

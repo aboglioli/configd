@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::{
     application::SchemaDto,
-    domain::{Error, PropConverter, SchemaId, SchemaRepository},
+    domain::{Error, Id, PropConverter, SchemaRepository},
 };
 
 #[derive(Deserialize)]
@@ -31,7 +31,7 @@ impl GetSchema {
     }
 
     pub async fn exec(&self, cmd: GetSchemaCommand) -> Result<GetSchemaResponse, Error> {
-        let schema_id = SchemaId::new(cmd.id)?;
+        let schema_id = Id::new(cmd.id)?;
 
         if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
             return Ok(GetSchemaResponse {

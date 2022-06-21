@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::domain::{Error, Reason, SchemaId, SchemaRepository, Value};
+use crate::domain::{Error, Id, Reason, SchemaRepository, Value};
 
 #[derive(Deserialize)]
 pub struct ValidateConfigCommand {
@@ -27,7 +27,7 @@ impl ValidateConfig {
     }
 
     pub async fn exec(&self, cmd: ValidateConfigCommand) -> Result<ValidateConfigResponse, Error> {
-        let schema_id = SchemaId::new(cmd.schema_id)?;
+        let schema_id = Id::new(cmd.schema_id)?;
 
         if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config = Value::from(cmd.data);
