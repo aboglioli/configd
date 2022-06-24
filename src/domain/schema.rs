@@ -6,6 +6,7 @@ use crate::domain::{Config, Diff, Error, Id, Prop, Value};
 #[async_trait]
 pub trait SchemaRepository {
     async fn find_by_id(&self, id: &Id) -> Result<Option<Schema>, Error>;
+    async fn exists(&self, id: &Id) -> Result<bool, Error>;
     async fn save(&self, schema: &mut Schema) -> Result<(), Error>;
     async fn delete(&self, id: &Id) -> Result<(), Error>;
 }
@@ -63,6 +64,26 @@ impl Schema {
         self.root_prop = prop;
 
         Ok(())
+    }
+
+    pub fn validate(&self, config: &mut Config) -> Diff {
+        let diff = self.root_prop.validate(config.data());
+        if diff.is_empty() {
+            config.mark_as_valid();
+        }
+
+        diff
+    }
+
+    pub fn create_config(&self, name: String, data: Value) -> Result<Config, Error> {
+        let mut config = Config::create(self.id.clone(), name, data)?;
+
+        let diff = self.root_prop.validate(config.data());
+        if !diff.is_empty() {
+            return Err(Error::Generic);
+        }
+
+        Ok(config)
     }
 
     pub fn add_config(&mut self, config: Config) -> Result<(), Error> {

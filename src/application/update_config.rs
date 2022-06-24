@@ -50,20 +50,21 @@ impl UpdateConfig {
             if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
                 config.change_data(cmd.data.into())?;
 
-                let diff = schema.validate(&config);
+                let diff = schema.validate(&mut config);
+                let created = if diff.is_empty() {
+                    self.config_repository.save(&mut config).await?;
+                    self.schema_repository.save(&mut schema).await?;
+
+                    true
+                } else {
+                    false
+                };
 
                 return Ok(UpdateConfigResponse {
                     schema_id: schema.id().to_string(),
                     config_id: config.id().to_string(),
                     valid: diff.is_empty(),
-                    created: if diff.is_empty() {
-                        self.config_repository.save(&mut config).await?;
-                        self.schema_repository.save(&mut schema).await?;
-
-                        true
-                    } else {
-                        false
-                    },
+                    created,
                     diffs: diff.into_diffs(),
                 });
             }

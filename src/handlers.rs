@@ -80,7 +80,10 @@ pub async fn create_config(
 ) -> impl IntoResponse {
     cmd.schema_id = schema_id;
 
-    let serv = CreateConfig::new(container.schema_repository.clone());
+    let serv = CreateConfig::new(
+        container.config_repository.clone(),
+        container.schema_repository.clone(),
+    );
 
     let res = serv.exec(cmd).await.unwrap();
 

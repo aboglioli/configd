@@ -36,6 +36,10 @@ impl CreateSchema {
 
         let mut schema = Schema::create(cmd.name, prop)?;
 
+        if self.schema_repository.exists(schema.id()).await? {
+            return Err(Error::Generic);
+        }
+
         self.schema_repository.save(&mut schema).await?;
 
         Ok(CreateSchemaResponse {
