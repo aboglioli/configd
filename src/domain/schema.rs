@@ -87,8 +87,7 @@ impl Schema {
         if let Some(config) = self.configs.get_mut(id) {
             let diff = self.root_prop.validate(&data);
 
-            config.change_data(data)?;
-            config.set_valid(diff.is_empty());
+            config.change_data(data, diff.is_empty())?;
 
             return Ok(());
         }

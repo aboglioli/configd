@@ -6,6 +6,7 @@ use crate::domain::{Error, Id, PropConverter, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct GetSchemaCommand {
+    #[serde(skip_deserializing)]
     pub schema_id: String,
 }
 

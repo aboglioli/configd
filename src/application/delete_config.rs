@@ -5,7 +5,9 @@ use crate::domain::{Error, Id, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct DeleteConfigCommand {
+    #[serde(skip_deserializing)]
     pub schema_id: String,
+    #[serde(skip_deserializing)]
     pub config_id: String,
 }
 

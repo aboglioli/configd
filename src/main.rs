@@ -6,7 +6,7 @@ mod handlers;
 mod infrastructure;
 
 use axum::{
-    routing::{get, post},
+    routing::{get, post, put},
     Extension, Router, Server,
 };
 use std::sync::Arc;
@@ -24,9 +24,15 @@ async fn main() {
         .route("/schemas", post(handlers::create_schema))
         .route(
             "/schemas/:schema_id",
-            get(handlers::get_schema_by_id).delete(handlers::delete_schema),
+            get(handlers::get_schema_by_id)
+                .put(handlers::update_schema)
+                .delete(handlers::delete_schema),
         )
         .route("/schemas/:schema_id/configs", post(handlers::create_config))
+        .route(
+            "/schemas/:schema_id/configs/:schema_id",
+            put(handlers::update_config).delete(handlers::delete_config),
+        )
         .route(
             "/schemas/:schema_id/validate",
             post(handlers::validate_config),

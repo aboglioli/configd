@@ -24,7 +24,7 @@ impl Config {
     }
 
     pub fn create(id: Id, name: String, data: Value, valid: bool) -> Result<Config, Error> {
-        Config::new(Id::slug(&name)?, name, data, valid)
+        Config::new(id, name, data, valid)
     }
 
     pub fn id(&self) -> &Id {
@@ -47,13 +47,10 @@ impl Config {
         self.valid
     }
 
-    pub fn change_data(&mut self, data: Value) -> Result<(), Error> {
+    pub fn change_data(&mut self, data: Value, valid: bool) -> Result<(), Error> {
         self.data = data;
+        self.valid = valid;
 
         Ok(())
-    }
-
-    pub fn set_valid(&mut self, valid: bool) {
-        self.valid = valid;
     }
 }

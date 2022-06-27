@@ -5,6 +5,7 @@ use crate::domain::{Error, Id, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct DeleteSchemaCommand {
+    #[serde(skip_deserializing)]
     pub schema_id: String,
 }
 
@@ -31,6 +32,10 @@ impl DeleteSchema {
             }
 
             self.schema_repository.delete(&schema_id).await?;
+
+            return Ok(DeleteSchemaResponse {
+                schema_id: schema_id.to_string(),
+            })
         }
 
         Err(Error::Generic)

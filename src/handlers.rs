@@ -7,8 +7,10 @@ use std::sync::Arc;
 
 use crate::{
     application::{
-        CreateConfig, CreateConfigCommand, CreateSchema, CreateSchemaCommand, DeleteSchema,
-        DeleteSchemaCommand, GetSchema, GetSchemaCommand, ValidateConfig, ValidateConfigCommand,
+        CreateConfig, CreateConfigCommand, CreateSchema, CreateSchemaCommand, DeleteConfig,
+        DeleteConfigCommand, DeleteSchema, DeleteSchemaCommand, GetSchema, GetSchemaCommand,
+        UpdateConfig, UpdateConfigCommand, UpdateSchema, UpdateSchemaCommand, ValidateConfig,
+        ValidateConfigCommand,
     },
     container::Container,
 };
@@ -47,6 +49,23 @@ pub async fn create_schema(
     (StatusCode::CREATED, Json(res))
 }
 
+pub async fn update_schema(
+    Path(schema_id): Path<String>,
+    Json(mut cmd): Json<UpdateSchemaCommand>,
+    Extension(container): Extension<Arc<Container>>,
+) -> impl IntoResponse {
+    cmd.schema_id = schema_id;
+
+    let serv = UpdateSchema::new(
+        container.prop_converter.clone(),
+        container.schema_repository.clone(),
+    );
+
+    let res = serv.exec(cmd).await.unwrap();
+
+    (StatusCode::OK, Json(res))
+}
+
 pub async fn delete_schema(
     Path(schema_id): Path<String>,
     Extension(container): Extension<Arc<Container>>,
@@ -81,6 +100,37 @@ pub async fn create_config(
     cmd.schema_id = schema_id;
 
     let serv = CreateConfig::new(container.schema_repository.clone());
+
+    let res = serv.exec(cmd).await.unwrap();
+
+    (StatusCode::CREATED, Json(res))
+}
+
+pub async fn update_config(
+    Path((schema_id, config_id)): Path<(String, String)>,
+    Json(mut cmd): Json<UpdateConfigCommand>,
+    Extension(container): Extension<Arc<Container>>,
+) -> impl IntoResponse {
+    cmd.schema_id = schema_id;
+    cmd.config_id = config_id;
+
+    let serv = UpdateConfig::new(container.schema_repository.clone());
+
+    let res = serv.exec(cmd).await.unwrap();
+
+    (StatusCode::OK, Json(res))
+}
+
+pub async fn delete_config(
+    Path((schema_id, config_id)): Path<(String, String)>,
+    Extension(container): Extension<Arc<Container>>,
+) -> impl IntoResponse {
+    let cmd = DeleteConfigCommand {
+        schema_id,
+        config_id,
+    };
+
+    let serv = DeleteConfig::new(container.schema_repository.clone());
 
     let res = serv.exec(cmd).await.unwrap();
 
