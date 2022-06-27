@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use std::collections::HashMap;
 
-use crate::domain::{Config, Diff, Error, Id, Prop, Value};
+use crate::domain::{Config, Error, Id, Prop, Value};
 
 #[async_trait]
 pub trait SchemaRepository {
@@ -40,8 +40,8 @@ impl Schema {
         })
     }
 
-    pub fn create(name: String, root_prop: Prop) -> Result<Schema, Error> {
-        Schema::new(Id::slug(&name)?, name, root_prop, HashMap::new())
+    pub fn create(id: Id, name: String, root_prop: Prop) -> Result<Schema, Error> {
+        Schema::new(id, name, root_prop, HashMap::new())
     }
 
     pub fn id(&self) -> &Id {
@@ -66,32 +66,18 @@ impl Schema {
         Ok(())
     }
 
-    pub fn validate(&self, config: &mut Config) -> Diff {
-        let diff = self.root_prop.validate(config.data());
-        if diff.is_empty() {
-            config.mark_as_valid();
-        }
-
-        diff
+    pub fn get_config(&self, id: &Id) -> Option<&Config> {
+        self.configs.get(id)
     }
 
-    pub fn create_config(&self, name: String, data: Value) -> Result<Config, Error> {
-        let mut config = Config::create(self.id.clone(), name, data)?;
-
-        let diff = self.root_prop.validate(config.data());
-        if !diff.is_empty() {
+    pub fn add_config(&mut self, id: Id, name: String, data: Value) -> Result<(), Error> {
+        if self.configs.contains_key(&id) {
             return Err(Error::Generic);
         }
 
-        Ok(config)
-    }
+        let diff = self.root_prop.validate(&data);
 
-    pub fn add_config(&mut self, config: Config) -> Result<(), Error> {
-        let diff = self.root_prop.validate(config.data());
-        if !diff.is_empty() {
-            return Err(Error::Generic);
-        }
-
+        let config = Config::create(id, name, data, diff.is_empty())?;
         self.configs.insert(config.id().clone(), config);
 
         Ok(())
@@ -100,11 +86,9 @@ impl Schema {
     pub fn update_config(&mut self, id: &Id, data: Value) -> Result<(), Error> {
         if let Some(config) = self.configs.get_mut(id) {
             let diff = self.root_prop.validate(&data);
-            if !diff.is_empty() {
-                return Err(Error::Generic);
-            }
 
             config.change_data(data)?;
+            config.set_valid(diff.is_empty());
 
             return Ok(());
         }
@@ -113,6 +97,10 @@ impl Schema {
     }
 
     pub fn delete_config(&mut self, id: &Id) -> Result<(), Error> {
+        if !self.configs.contains_key(id) {
+            return Err(Error::Generic);
+        }
+
         self.configs.remove(id);
 
         Ok(())
@@ -125,12 +113,16 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use crate::domain::Interval;
+    use crate::domain::{Interval, Value};
 
     #[test]
     fn create() {
-        let schema =
-            Schema::create("Schema 01".to_string(), Prop::bool(true, None).unwrap()).unwrap();
+        let schema = Schema::create(
+            Id::new("schema-01").unwrap(),
+            "Schema 01".to_string(),
+            Prop::bool(true, None).unwrap(),
+        )
+        .unwrap();
 
         assert_eq!(schema.id().value(), "schema-01");
         assert_eq!(schema.name(), "Schema 01");

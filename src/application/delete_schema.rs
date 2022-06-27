@@ -25,7 +25,13 @@ impl DeleteSchema {
     pub async fn exec(&self, cmd: DeleteSchemaCommand) -> Result<DeleteSchemaResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        self.schema_repository.delete(&schema_id).await?;
+        if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
+            if schema.configs().len() > 0 {
+                return Err(Error::Generic);
+            }
+
+            self.schema_repository.delete(&schema_id).await?;
+        }
 
         Err(Error::Generic)
     }

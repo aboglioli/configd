@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::domain::{Error, Id, Reason, SchemaRepository, Value};
+use crate::domain::{Error, Id, Reason, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct ValidateConfigCommand {

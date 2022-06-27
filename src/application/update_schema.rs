@@ -37,6 +37,7 @@ impl UpdateSchema {
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let prop = self.prop_converter.from(cmd.schema)?;
 
+            // TODO: update related configs
             schema.change_root_prop(prop)?;
 
             self.schema_repository.save(&mut schema).await?;

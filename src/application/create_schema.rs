@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Error, PropConverter, Schema, SchemaRepository};
+use crate::domain::{Error, Id, PropConverter, Schema, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct CreateSchemaCommand {
@@ -33,12 +33,13 @@ impl CreateSchema {
 
     pub async fn exec(&self, cmd: CreateSchemaCommand) -> Result<CreateSchemaResponse, Error> {
         let prop = self.prop_converter.from(cmd.schema)?;
+        let id = Id::slug(&cmd.name)?;
 
-        let mut schema = Schema::create(cmd.name, prop)?;
-
-        if self.schema_repository.exists(schema.id()).await? {
+        if self.schema_repository.exists(&id).await? {
             return Err(Error::Generic);
         }
+
+        let mut schema = Schema::create(id, cmd.name, prop)?;
 
         self.schema_repository.save(&mut schema).await?;
 
