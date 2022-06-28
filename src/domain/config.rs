@@ -49,4 +49,8 @@ impl Config {
 
         Ok(())
     }
+
+    pub fn mark_as_invalid(&mut self) {
+        self.valid = false;
+    }
 }

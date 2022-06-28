@@ -6,7 +6,7 @@ mod handlers;
 mod infrastructure;
 
 use axum::{
-    routing::{get, post, put},
+    routing::{get, post},
     Extension, Router, Server,
 };
 use std::sync::Arc;

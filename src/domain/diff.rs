@@ -1,7 +1,7 @@
 use serde::Serialize;
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Reason {
     NullValue,
@@ -18,7 +18,7 @@ pub enum Reason {
     UnknownProp,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Diff {
     root_key: String,
     diffs: HashMap<String, Vec<Reason>>,

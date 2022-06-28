@@ -63,6 +63,13 @@ impl Schema {
     pub fn change_root_prop(&mut self, prop: Prop) -> Result<(), Error> {
         self.root_prop = prop;
 
+        for config in self.configs.values_mut() {
+            let diff = self.root_prop.validate(config.data());
+            if !diff.is_empty() {
+                config.mark_as_invalid();
+            }
+        }
+
         Ok(())
     }
 
@@ -76,6 +83,9 @@ impl Schema {
         }
 
         let diff = self.root_prop.validate(&data);
+        if !diff.is_empty() {
+            return Err(Error::Generic);
+        }
 
         let config = Config::create(id, name, data, diff.is_empty())?;
         self.configs.insert(config.id().clone(), config);
@@ -86,6 +96,9 @@ impl Schema {
     pub fn update_config(&mut self, id: &Id, data: Value) -> Result<(), Error> {
         if let Some(config) = self.configs.get_mut(id) {
             let diff = self.root_prop.validate(&data);
+            if !diff.is_empty() {
+                return Err(Error::Generic);
+            }
 
             config.change_data(data, diff.is_empty())?;
 
