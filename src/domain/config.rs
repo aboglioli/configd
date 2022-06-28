@@ -39,10 +39,6 @@ impl Config {
         &self.data
     }
 
-    pub fn into_data(self) -> Value {
-        self.data
-    }
-
     pub fn is_valid(&self) -> bool {
         self.valid
     }

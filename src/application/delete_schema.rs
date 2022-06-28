@@ -35,7 +35,7 @@ impl DeleteSchema {
 
             return Ok(DeleteSchemaResponse {
                 schema_id: schema_id.to_string(),
-            })
+            });
         }
 
         Err(Error::Generic)

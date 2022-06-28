@@ -30,8 +30,10 @@ async fn main() {
         )
         .route("/schemas/:schema_id/configs", post(handlers::create_config))
         .route(
-            "/schemas/:schema_id/configs/:schema_id",
-            put(handlers::update_config).delete(handlers::delete_config),
+            "/schemas/:schema_id/configs/:config_id",
+            get(handlers::get_config_by_id)
+                .put(handlers::update_config)
+                .delete(handlers::delete_config),
         )
         .route(
             "/schemas/:schema_id/validate",

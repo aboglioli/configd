@@ -169,6 +169,12 @@ impl From<Value> for JsonValue {
     }
 }
 
+impl From<&Value> for JsonValue {
+    fn from(value: &Value) -> Self {
+        value.clone().into()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -8,9 +8,9 @@ use std::sync::Arc;
 use crate::{
     application::{
         CreateConfig, CreateConfigCommand, CreateSchema, CreateSchemaCommand, DeleteConfig,
-        DeleteConfigCommand, DeleteSchema, DeleteSchemaCommand, GetSchema, GetSchemaCommand,
-        UpdateConfig, UpdateConfigCommand, UpdateSchema, UpdateSchemaCommand, ValidateConfig,
-        ValidateConfigCommand,
+        DeleteConfigCommand, DeleteSchema, DeleteSchemaCommand, GetConfig, GetConfigCommand,
+        GetSchema, GetSchemaCommand, UpdateConfig, UpdateConfigCommand, UpdateSchema,
+        UpdateSchemaCommand, ValidateConfig, ValidateConfigCommand,
     },
     container::Container,
 };
@@ -88,6 +88,23 @@ pub async fn validate_config(
     let serv = ValidateConfig::new(container.schema_repository.clone());
 
     let res = serv.exec(cmd).await.unwrap();
+
+    (StatusCode::OK, Json(res))
+}
+
+pub async fn get_config_by_id(
+    Path((schema_id, config_id)): Path<(String, String)>,
+    Extension(container): Extension<Arc<Container>>,
+) -> impl IntoResponse {
+    let serv = GetConfig::new(container.schema_repository.clone());
+
+    let res = serv
+        .exec(GetConfigCommand {
+            schema_id,
+            config_id,
+        })
+        .await
+        .unwrap();
 
     (StatusCode::OK, Json(res))
 }
