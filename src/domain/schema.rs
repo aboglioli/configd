@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use std::collections::HashMap;
 
-use crate::domain::{Config, Error, Id, Prop, Value};
+use crate::domain::{Config, Diff, Error, Id, Prop, Value};
 
 #[async_trait]
 pub trait SchemaRepository {
@@ -77,7 +77,7 @@ impl Schema {
         self.configs.get(id)
     }
 
-    pub fn add_config(&mut self, id: Id, name: String, data: Value) -> Result<(), Error> {
+    pub fn add_config(&mut self, id: Id, name: String, data: Value) -> Result<Diff, Error> {
         if self.configs.contains_key(&id) {
             return Err(Error::Generic);
         }
@@ -90,10 +90,10 @@ impl Schema {
         let config = Config::create(id, name, data, diff.is_empty())?;
         self.configs.insert(config.id().clone(), config);
 
-        Ok(())
+        Ok(diff)
     }
 
-    pub fn update_config(&mut self, id: &Id, data: Value) -> Result<(), Error> {
+    pub fn update_config(&mut self, id: &Id, data: Value) -> Result<Diff, Error> {
         if let Some(config) = self.configs.get_mut(id) {
             let diff = self.root_prop.validate(&data);
             if !diff.is_empty() {
@@ -102,7 +102,7 @@ impl Schema {
 
             config.change_data(data, diff.is_empty())?;
 
-            return Ok(());
+            return Ok(diff);
         }
 
         Err(Error::Generic)

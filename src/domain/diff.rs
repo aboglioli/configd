@@ -1,7 +1,7 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Reason {
     NullValue,
@@ -32,16 +32,8 @@ impl Diff {
         }
     }
 
-    pub fn root_key(&self) -> &str {
-        &self.root_key
-    }
-
     pub fn diffs(&self) -> &HashMap<String, Vec<Reason>> {
         &self.diffs
-    }
-
-    pub fn into_diffs(self) -> HashMap<String, Vec<Reason>> {
-        self.diffs
     }
 
     pub fn is_empty(&self) -> bool {
@@ -85,7 +77,7 @@ mod tests {
 
         diff.merge(subdiff);
 
-        assert_eq!(diff.root_key(), "$");
+        assert_eq!(diff.root_key, "$");
 
         let diffs = diff.diffs();
         assert_eq!(diffs.len(), 3);

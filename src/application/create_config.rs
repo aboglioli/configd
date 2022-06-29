@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-use crate::domain::{Error, Id, SchemaRepository};
+use crate::domain::{Error, Id, Reason, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct CreateConfigCommand {
@@ -16,6 +16,7 @@ pub struct CreateConfigCommand {
 pub struct CreateConfigResponse {
     pub schema_id: String,
     pub config_id: String,
+    pub diff: Option<HashMap<String, Vec<Reason>>>,
 }
 
 pub struct CreateConfig {
@@ -33,16 +34,19 @@ impl CreateConfig {
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::slug(&cmd.name)?;
 
-            let res = CreateConfigResponse {
-                schema_id: schema_id.to_string(),
-                config_id: config_id.to_string(),
-            };
-
-            schema.add_config(config_id, cmd.name, cmd.data.into())?;
+            let diff = schema.add_config(config_id.clone(), cmd.name, cmd.data.into())?;
 
             self.schema_repository.save(&mut schema).await?;
 
-            return Ok(res);
+            return Ok(CreateConfigResponse {
+                schema_id: schema_id.to_string(),
+                config_id: config_id.to_string(),
+                diff: if !diff.is_empty() {
+                    Some(diff.diffs().clone())
+                } else {
+                    None
+                },
+            });
         }
 
         Err(Error::Generic)

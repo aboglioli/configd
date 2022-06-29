@@ -13,7 +13,6 @@ pub struct ValidateConfigCommand {
 
 #[derive(Serialize)]
 pub struct ValidateConfigResponse {
-    valid: bool,
     diffs: HashMap<String, Vec<Reason>>,
 }
 
@@ -33,8 +32,7 @@ impl ValidateConfig {
             let diff = schema.root_prop().validate(&cmd.data.into());
 
             return Ok(ValidateConfigResponse {
-                valid: diff.is_empty(),
-                diffs: diff.into_diffs(),
+                diffs: diff.diffs().clone(),
             });
         }
 
