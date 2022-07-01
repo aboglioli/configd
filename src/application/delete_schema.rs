@@ -27,7 +27,7 @@ impl DeleteSchema {
         let schema_id = Id::new(cmd.schema_id)?;
 
         if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            if schema.configs().len() > 0 {
+            if !schema.configs().is_empty() {
                 return Err(Error::SchemaContainsConfigs(schema_id));
             }
 

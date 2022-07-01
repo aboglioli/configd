@@ -32,12 +32,13 @@ impl CreateSchema {
     }
 
     pub async fn exec(&self, cmd: CreateSchemaCommand) -> Result<CreateSchemaResponse, Error> {
-        let prop = self.prop_converter.from(cmd.schema)?;
         let id = Id::slug(&cmd.name)?;
 
         if self.schema_repository.exists(&id).await? {
             return Err(Error::SchemaAlreadyExists(id));
         }
+
+        let prop = self.prop_converter.from(cmd.schema)?;
 
         let mut schema = Schema::create(id, cmd.name, prop)?;
 
