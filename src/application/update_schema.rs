@@ -48,6 +48,6 @@ impl UpdateSchema {
             });
         }
 
-        Err(Error::Generic)
+        Err(Error::SchemaNotFound(schema_id))
     }
 }

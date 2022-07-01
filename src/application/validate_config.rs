@@ -36,6 +36,6 @@ impl ValidateConfig {
             });
         }
 
-        Err(Error::Generic)
+        Err(Error::SchemaNotFound(schema_id))
     }
 }

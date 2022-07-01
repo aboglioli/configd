@@ -1,5 +1,8 @@
 use serde_json::{Number, Value as JsonValue};
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fmt,
+};
 
 // Value & Kind
 #[derive(Debug, PartialEq, Eq)]
@@ -11,6 +14,24 @@ pub enum Kind {
     String,
     Array,
     Object,
+}
+
+impl fmt::Display for Kind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Kind::Null => "null",
+                Kind::Bool => "bool",
+                Kind::Int => "int",
+                Kind::Float => "float",
+                Kind::String => "string",
+                Kind::Array => "array",
+                Kind::Object => "object",
+            }
+        )
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

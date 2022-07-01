@@ -46,9 +46,9 @@ impl GetConfig {
                 });
             }
 
-            return Err(Error::Generic);
+            return Err(Error::ConfigNotFound(config_id));
         }
 
-        Err(Error::Generic)
+        Err(Error::SchemaNotFound(schema_id))
     }
 }

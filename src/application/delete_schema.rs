@@ -28,7 +28,7 @@ impl DeleteSchema {
 
         if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
             if schema.configs().len() > 0 {
-                return Err(Error::Generic);
+                return Err(Error::SchemaContainsConfigs(schema_id));
             }
 
             self.schema_repository.delete(&schema_id).await?;
@@ -38,6 +38,6 @@ impl DeleteSchema {
             });
         }
 
-        Err(Error::Generic)
+        Err(Error::SchemaNotFound(schema_id))
     }
 }

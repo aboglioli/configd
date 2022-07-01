@@ -42,7 +42,10 @@ impl Prop {
     pub fn bool(required: bool, default_value: Option<Value>) -> Result<Prop, Error> {
         if let Some(default_value) = &default_value {
             if default_value.kind() != Kind::Bool {
-                return Err(Error::Generic);
+                return Err(Error::MismatchedKinds {
+                    expected: Kind::Bool,
+                    found: default_value.kind(),
+                });
             }
         }
 
@@ -60,13 +63,21 @@ impl Prop {
     ) -> Result<Prop, Error> {
         if let Some(default_value) = &default_value {
             if default_value.kind() != Kind::Int {
-                return Err(Error::Generic);
+                return Err(Error::MismatchedKinds {
+                    expected: Kind::Int,
+                    found: default_value.kind(),
+                });
             }
         }
 
         if let Some(allowed_values) = &allowed_values {
-            if allowed_values.iter().any(|value| value.kind() != Kind::Int) {
-                return Err(Error::Generic);
+            for value in allowed_values.iter() {
+                if value.kind() != Kind::Int {
+                    return Err(Error::MismatchedKinds {
+                        expected: Kind::Int,
+                        found: value.kind(),
+                    });
+                }
             }
         }
 
@@ -86,16 +97,21 @@ impl Prop {
     ) -> Result<Prop, Error> {
         if let Some(default_value) = &default_value {
             if default_value.kind() != Kind::Float {
-                return Err(Error::Generic);
+                return Err(Error::MismatchedKinds {
+                    expected: Kind::Float,
+                    found: default_value.kind(),
+                });
             }
         }
 
         if let Some(allowed_values) = &allowed_values {
-            if allowed_values
-                .iter()
-                .any(|value| value.kind() != Kind::Float)
-            {
-                return Err(Error::Generic);
+            for value in allowed_values.iter() {
+                if value.kind() != Kind::Float {
+                    return Err(Error::MismatchedKinds {
+                        expected: Kind::Float,
+                        found: value.kind(),
+                    });
+                }
             }
         }
 
@@ -115,16 +131,21 @@ impl Prop {
     ) -> Result<Prop, Error> {
         if let Some(default_value) = &default_value {
             if default_value.kind() != Kind::String {
-                return Err(Error::Generic);
+                return Err(Error::MismatchedKinds {
+                    expected: Kind::String,
+                    found: default_value.kind(),
+                });
             }
         }
 
         if let Some(allowed_values) = &allowed_values {
-            if allowed_values
-                .iter()
-                .any(|value| value.kind() != Kind::String)
-            {
-                return Err(Error::Generic);
+            for value in allowed_values.iter() {
+                if value.kind() != Kind::String {
+                    return Err(Error::MismatchedKinds {
+                        expected: Kind::String,
+                        found: value.kind(),
+                    });
+                }
             }
         }
 

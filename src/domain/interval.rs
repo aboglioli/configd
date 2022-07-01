@@ -17,7 +17,7 @@ impl Interval {
         let max = max.into();
 
         if min.is_none() && max.is_none() {
-            return Err(Error::Generic);
+            return Err(Error::EmptyInterval);
         }
 
         Ok(Interval {

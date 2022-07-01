@@ -49,7 +49,8 @@ impl PropConverter<String> for JsonPropConverter {
     type Error = Error;
 
     fn from(&self, props: String) -> Result<Prop, Self::Error> {
-        let value: JsonValue = serde_json::from_str(&props).map_err(|_| Error::Generic)?;
+        let value: JsonValue =
+            serde_json::from_str(&props).map_err(|err| Error::CouldNotDeserializeProp(err))?;
 
         self.from(value)
     }
@@ -57,7 +58,7 @@ impl PropConverter<String> for JsonPropConverter {
     fn to(&self, prop: Prop) -> Result<String, Self::Error> {
         let value: JsonValue = self.to(prop)?;
 
-        serde_json::to_string(&value).map_err(|_| Error::Generic)
+        serde_json::to_string(&value).map_err(|err| Error::CouldNotDeserializeProp(err))
     }
 }
 
@@ -69,8 +70,8 @@ impl PropConverter<JsonValue> for JsonPropConverter {
             JsonValue::Object(mut map) => {
                 // $schema
                 if let Some(value) = map.remove(Self::SCHEMA_KEY) {
-                    let prop: JsonProp =
-                        serde_json::from_value(value).map_err(|_| Error::Generic)?;
+                    let prop: JsonProp = serde_json::from_value(value)
+                        .map_err(|err| Error::CouldNotDeserializeProp(err))?;
 
                     let default_value = prop.default_value.map(Value::from);
                     let allowed_values = prop
@@ -105,12 +106,12 @@ impl PropConverter<JsonValue> for JsonPropConverter {
             }
             JsonValue::Array(mut items) => {
                 if items.len() != 1 {
-                    return Err(Error::Generic);
+                    return Err(Error::InvalidArray);
                 }
 
                 Ok(Prop::array(self.from(items.remove(0))?))
             }
-            _ => Err(Error::Generic),
+            _ => Err(Error::UnknownRootProp),
         }
     }
 
@@ -129,7 +130,8 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                     regex: None,
                 };
 
-                let json_value = serde_json::to_value(&json_prop).map_err(|_| Error::Generic)?;
+                let json_value = serde_json::to_value(&json_prop)
+                    .map_err(|err| Error::CouldNotDeserializeProp(err))?;
 
                 let mut map = Map::new();
                 map.insert(Self::SCHEMA_KEY.to_string(), json_value);
@@ -155,7 +157,8 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                     regex: None,
                 };
 
-                let json_value = serde_json::to_value(&json_prop).map_err(|_| Error::Generic)?;
+                let json_value = serde_json::to_value(&json_prop)
+                    .map_err(|err| Error::CouldNotDeserializeProp(err))?;
 
                 let mut map = Map::new();
                 map.insert(Self::SCHEMA_KEY.to_string(), json_value);
@@ -181,7 +184,8 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                     regex: None,
                 };
 
-                let json_value = serde_json::to_value(&json_prop).map_err(|_| Error::Generic)?;
+                let json_value = serde_json::to_value(&json_prop)
+                    .map_err(|err| Error::CouldNotDeserializeProp(err))?;
 
                 let mut map = Map::new();
                 map.insert(Self::SCHEMA_KEY.to_string(), json_value);
@@ -204,7 +208,8 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                     regex,
                 };
 
-                let json_value = serde_json::to_value(&json_prop).map_err(|_| Error::Generic)?;
+                let json_value = serde_json::to_value(&json_prop)
+                    .map_err(|err| Error::CouldNotDeserializeProp(err))?;
 
                 let mut map = Map::new();
                 map.insert(Self::SCHEMA_KEY.to_string(), json_value);

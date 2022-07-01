@@ -12,7 +12,7 @@ pub struct Config {
 impl Config {
     pub fn new(id: Id, name: String, data: Value, valid: bool) -> Result<Config, Error> {
         if name.is_empty() {
-            return Err(Error::Generic);
+            return Err(Error::EmptyName);
         }
 
         Ok(Config {

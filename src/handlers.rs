@@ -49,6 +49,7 @@ pub async fn create_schema(
     (StatusCode::CREATED, Json(res))
 }
 
+#[axum_macros::debug_handler]
 pub async fn update_schema(
     Path(schema_id): Path<String>,
     Json(mut cmd): Json<UpdateSchemaCommand>,

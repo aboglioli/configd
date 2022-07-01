@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::domain::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -10,7 +12,7 @@ impl Id {
         let id = id.into();
 
         if id.is_empty() {
-            return Err(Error::Generic);
+            return Err(Error::EmptyId);
         }
 
         Ok(Id { id })
@@ -26,8 +28,8 @@ impl Id {
     }
 }
 
-impl ToString for Id {
-    fn to_string(&self) -> String {
-        self.id.to_string()
+impl fmt::Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.id)
     }
 }

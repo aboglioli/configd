@@ -36,7 +36,7 @@ impl CreateSchema {
         let id = Id::slug(&cmd.name)?;
 
         if self.schema_repository.exists(&id).await? {
-            return Err(Error::Generic);
+            return Err(Error::SchemaAlreadyExists(id));
         }
 
         let mut schema = Schema::create(id, cmd.name, prop)?;
