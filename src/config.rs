@@ -1,6 +1,13 @@
 use std::{env, str::FromStr};
+use thiserror::Error;
 
-use crate::domain::Error;
+#[derive(Error, Debug)]
+pub enum ConfigError {
+    #[error("invalid environment: {0}")]
+    InvalidEnvironment(String),
+    #[error("invalid storage: {0}")]
+    InvalidStorage(String),
+}
 
 // Environment
 pub enum Environment {
@@ -10,14 +17,14 @@ pub enum Environment {
 }
 
 impl FromStr for Environment {
-    type Err = Error;
+    type Err = ConfigError;
 
-    fn from_str(s: &str) -> Result<Environment, Error> {
+    fn from_str(s: &str) -> Result<Environment, Self::Err> {
         match s {
             "dev" => Ok(Environment::Dev),
             "stg" => Ok(Environment::Stg),
             "prod" => Ok(Environment::Prod),
-            _ => Err(Error::Generic),
+            _ => Err(ConfigError::InvalidEnvironment(s.to_string())),
         }
     }
 }
@@ -28,12 +35,12 @@ pub enum Storage {
 }
 
 impl FromStr for Storage {
-    type Err = Error;
+    type Err = ConfigError;
 
-    fn from_str(s: &str) -> Result<Storage, Error> {
+    fn from_str(s: &str) -> Result<Storage, Self::Err> {
         match s {
             "in-mem" => Ok(Storage::InMem),
-            _ => Err(Error::Generic),
+            _ => Err(ConfigError::InvalidStorage(s.to_string())),
         }
     }
 }
@@ -46,7 +53,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load() -> Result<Config, Error> {
+    pub fn load() -> Result<Config, ConfigError> {
         Ok(Config {
             env: if let Ok(env) = env::var("ENV") {
                 Environment::from_str(&env)?
@@ -54,16 +61,12 @@ impl Config {
                 Environment::Dev
             },
             host: env::var("HOST").unwrap_or("127.0.0.1".to_string()),
-            port: if let Ok(port) = env::var("PORT") {
-                port.parse().map_err(|_| Error::Generic)?
-            } else {
-                8080
-            },
-            storage: if let Ok(storage) = env::var("STORAGE") {
-                Storage::from_str(&storage)?
-            } else {
-                Storage::InMem
-            },
+            port: env::var("PORT")
+                .map(|port| port.parse().unwrap())
+                .unwrap_or(8080),
+            storage: env::var("STORAGE")
+                .map(|storage| Storage::from_str(&storage).unwrap())
+                .unwrap_or(Storage::InMem),
         })
     }
 }
