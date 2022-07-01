@@ -38,3 +38,23 @@ pub enum Error {
     #[error("invalid config")]
     InvalidConfig(Diff),
 }
+
+impl Error {
+    pub fn code(&self) -> &str {
+        match self {
+            Error::EmptyId => "empty_id",
+            Error::EmptyName => "empty_name",
+            Error::EmptyInterval => "empty_interval",
+            Error::MismatchedKinds { .. } => "mismatched_kinds",
+            Error::CouldNotDeserializeProp(_) => "could_not_deserialize_prop",
+            Error::InvalidArray => "invalid_array",
+            Error::UnknownRootProp => "unknown_root_prop",
+            Error::SchemaNotFound(_) => "schema_not_found",
+            Error::SchemaAlreadyExists(_) => "schema_already_exists",
+            Error::SchemaContainsConfigs(_) => "schema_contains_configs",
+            Error::ConfigNotFound(_) => "config_not_found",
+            Error::ConfigAlreadyExists(_) => "config_already_exists",
+            Error::InvalidConfig(_) => "invalid_config",
+        }
+    }
+}
