@@ -1,3 +1,4 @@
+use core_lib::errors::Error as CoreError;
 use thiserror::Error;
 
 use crate::domain::{Diff, Id, Kind};
@@ -23,6 +24,8 @@ pub enum Error {
     UnknownRootProp,
 
     // Entities
+    #[error("could not record event")]
+    CouldNotRecordEvent(CoreError),
     #[error("schema not found: {0}")]
     SchemaNotFound(Id),
     #[error("schema already exists: {0}")]
@@ -49,6 +52,7 @@ impl Error {
             Error::CouldNotDeserializeProp(_) => "could_not_deserialize_prop",
             Error::InvalidArray => "invalid_array",
             Error::UnknownRootProp => "unknown_root_prop",
+            Error::CouldNotRecordEvent(_) => "could_not_record_event",
             Error::SchemaNotFound(_) => "schema_not_found",
             Error::SchemaAlreadyExists(_) => "schema_already_exists",
             Error::SchemaContainsConfigs(_) => "schema_contains_configs",

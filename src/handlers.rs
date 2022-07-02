@@ -3,8 +3,8 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use serde_json::json;
-use std::sync::Arc;
+use serde::Serialize;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     application::{
@@ -14,16 +14,19 @@ use crate::{
         UpdateSchemaCommand, ValidateConfig, ValidateConfigCommand,
     },
     container::Container,
-    domain::Error,
+    domain::{Error, Reason},
 };
 
 // Error
+#[derive(Serialize)]
+pub struct ErrorDto {
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diffs: Option<HashMap<String, Vec<Reason>>>,
+}
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        // let (status, code) = match {
-        //
-        // }
-
         let status = match self {
             Error::SchemaNotFound(_) | Error::ConfigNotFound(_) => StatusCode::NOT_FOUND,
             Error::EmptyId
@@ -39,17 +42,17 @@ impl IntoResponse for Error {
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
-        let body = Json(json!({
-            "code": self.code().to_string(),
-            "message": self.to_string(),
-            "diffs": if let Error::InvalidConfig(diff) = self {
+        let body = ErrorDto {
+            code: self.code().to_string(),
+            message: self.to_string(),
+            diffs: if let Error::InvalidConfig(diff) = self {
                 Some(diff.diffs().clone())
             } else {
                 None
             },
-        }));
+        };
 
-        (status, body).into_response()
+        (status, Json(body)).into_response()
     }
 }
 

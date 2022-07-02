@@ -1,7 +1,8 @@
 use async_trait::async_trait;
+use core_lib::events::{Event, EventCollector};
 use std::collections::HashMap;
 
-use crate::domain::{Config, Error, Id, Prop, Value};
+use crate::domain::{Config, Error, Id, Prop, SchemaCreated, Value};
 
 #[async_trait]
 pub trait SchemaRepository {
@@ -19,6 +20,8 @@ pub struct Schema {
     root_prop: Prop,
 
     configs: HashMap<Id, Config>,
+
+    event_collector: EventCollector,
 }
 
 impl Schema {
@@ -27,6 +30,7 @@ impl Schema {
         name: String,
         root_prop: Prop,
         configs: HashMap<Id, Config>,
+        event_collector: Option<EventCollector>,
     ) -> Result<Schema, Error> {
         if name.is_empty() {
             return Err(Error::EmptyName);
@@ -37,11 +41,28 @@ impl Schema {
             name,
             root_prop,
             configs,
+            event_collector: event_collector.unwrap_or_else(EventCollector::create),
         })
     }
 
     pub fn create(id: Id, name: String, root_prop: Prop) -> Result<Schema, Error> {
-        Schema::new(id, name, root_prop, HashMap::new())
+        let mut schema = Schema::new(
+            id,
+            name,
+            root_prop,
+            HashMap::new(),
+            Some(EventCollector::create()),
+        )?;
+
+        schema
+            .event_collector
+            .record(SchemaCreated {
+                id: schema.id().to_string(),
+                name: schema.name().to_string(),
+            })
+            .map_err(Error::CouldNotRecordEvent)?;
+
+        Ok(schema)
     }
 
     pub fn id(&self) -> &Id {
@@ -117,6 +138,10 @@ impl Schema {
 
         Ok(())
     }
+
+    pub fn events(&mut self) -> Vec<Event> {
+        self.event_collector.drain()
+    }
 }
 
 #[cfg(test)]
@@ -167,6 +192,7 @@ mod tests {
                 ),
             ])),
             HashMap::new(),
+            None,
         )
         .unwrap();
 

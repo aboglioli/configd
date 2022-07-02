@@ -1,6 +1,7 @@
 mod config;
 mod diff;
 mod errors;
+mod events;
 mod id;
 mod interval;
 mod prop;
@@ -10,6 +11,7 @@ mod value;
 pub use config::*;
 pub use diff::*;
 pub use errors::*;
+pub use events::*;
 pub use id::*;
 pub use interval::*;
 pub use prop::*;
