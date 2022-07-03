@@ -3,8 +3,8 @@ use core_lib::events::{Event, EventCollector};
 use std::collections::HashMap;
 
 use crate::domain::{
-    Config, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id, Prop, SchemaCreated,
-    SchemaDeleted, SchemaRootPropChanged, Value,
+    Config, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id, Prop,
+    SchemaCreated, SchemaDeleted, SchemaRootPropChanged, Value,
 };
 
 #[async_trait]
@@ -105,8 +105,19 @@ impl Schema {
         Ok(())
     }
 
-    pub fn get_config(&self, id: &Id) -> Option<&Config> {
-        self.configs.get(id)
+    pub fn get_config(&mut self, id: &Id) -> Result<&Config, Error> {
+        if let Some(config) = self.configs.get(id) {
+            self.event_collector
+                .record(ConfigAccessed {
+                    id: config.id().to_string(),
+                    schema_id: self.id.to_string(),
+                })
+                .map_err(Error::CouldNotRecordEvent)?;
+
+            Ok(config)
+        } else {
+            Err(Error::ConfigNotFound(id.clone()))
+        }
     }
 
     pub fn add_config(&mut self, id: Id, name: String, data: Value) -> Result<(), Error> {

@@ -53,6 +53,22 @@ impl Publishable for SchemaDeleted {
 
 // Config
 #[derive(Serialize, Deserialize)]
+pub struct ConfigAccessed {
+    pub id: String,
+    pub schema_id: String,
+}
+
+impl Publishable for ConfigAccessed {
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn topic(&self) -> &str {
+        "config.accessed"
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct ConfigCreated {
     pub id: String,
     pub schema_id: String,

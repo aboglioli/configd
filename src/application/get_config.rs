@@ -33,20 +33,18 @@ impl GetConfig {
     pub async fn exec(&self, cmd: GetConfigCommand) -> Result<GetConfigResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
+        if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::new(cmd.config_id)?;
 
-            if let Some(config) = schema.get_config(&config_id) {
-                return Ok(GetConfigResponse {
-                    schema_id: schema_id.to_string(),
-                    id: config.id().to_string(),
-                    name: config.name().to_string(),
-                    data: config.data().into(),
-                    valid: config.is_valid(),
-                });
-            }
+            let config = schema.get_config(&config_id)?;
 
-            return Err(Error::ConfigNotFound(config_id));
+            return Ok(GetConfigResponse {
+                schema_id: schema_id.to_string(),
+                id: config.id().to_string(),
+                name: config.name().to_string(),
+                data: config.data().into(),
+                valid: config.is_valid(),
+            });
         }
 
         Err(Error::SchemaNotFound(schema_id))
