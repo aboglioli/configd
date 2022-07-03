@@ -1,3 +1,4 @@
+use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
@@ -22,31 +23,43 @@ pub struct GetConfigResponse {
 }
 
 pub struct GetConfig {
+    event_publisher: Arc<dyn Publisher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl GetConfig {
-    pub fn new(schema_repository: Arc<dyn SchemaRepository + Sync + Send>) -> GetConfig {
-        GetConfig { schema_repository }
+    pub fn new(
+        event_publisher: Arc<dyn Publisher + Sync + Send>,
+        schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
+    ) -> GetConfig {
+        GetConfig {
+            event_publisher,
+            schema_repository,
+        }
     }
 
     pub async fn exec(&self, cmd: GetConfigCommand) -> Result<GetConfigResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
+        if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::new(cmd.config_id)?;
 
-            if let Some(config) = schema.get_config(&config_id) {
-                return Ok(GetConfigResponse {
-                    schema_id: schema_id.to_string(),
-                    id: config.id().to_string(),
-                    name: config.name().to_string(),
-                    data: config.data().into(),
-                    valid: config.is_valid(),
-                });
-            }
+            let config = schema.get_config(&config_id)?;
 
-            return Err(Error::ConfigNotFound(config_id));
+            let res = GetConfigResponse {
+                schema_id: schema_id.to_string(),
+                id: config.id().to_string(),
+                name: config.name().to_string(),
+                data: config.data().into(),
+                valid: config.is_valid(),
+            };
+
+            self.event_publisher
+                .publish(&schema.events())
+                .await
+                .map_err(Error::CouldNotPublishEvents)?;
+
+            return Ok(res);
         }
 
         Err(Error::SchemaNotFound(schema_id))

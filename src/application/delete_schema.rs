@@ -1,3 +1,4 @@
+use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -15,23 +16,33 @@ pub struct DeleteSchemaResponse {
 }
 
 pub struct DeleteSchema {
+    event_publisher: Arc<dyn Publisher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl DeleteSchema {
-    pub fn new(schema_repository: Arc<dyn SchemaRepository + Sync + Send>) -> DeleteSchema {
-        DeleteSchema { schema_repository }
+    pub fn new(
+        event_publisher: Arc<dyn Publisher + Sync + Send>,
+        schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
+    ) -> DeleteSchema {
+        DeleteSchema {
+            event_publisher,
+            schema_repository,
+        }
     }
 
     pub async fn exec(&self, cmd: DeleteSchemaCommand) -> Result<DeleteSchemaResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            if !schema.configs().is_empty() {
-                return Err(Error::SchemaContainsConfigs(schema_id));
-            }
+        if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
+            schema.delete()?;
 
             self.schema_repository.delete(&schema_id).await?;
+
+            self.event_publisher
+                .publish(&schema.events())
+                .await
+                .map_err(Error::CouldNotPublishEvents)?;
 
             return Ok(DeleteSchemaResponse {
                 schema_id: schema_id.to_string(),

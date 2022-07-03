@@ -1,8 +1,9 @@
+use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, PropConverter, Schema, SchemaRepository};
+use crate::domain::{Error, Id, Schema, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct CreateSchemaCommand {
@@ -16,17 +17,17 @@ pub struct CreateSchemaResponse {
 }
 
 pub struct CreateSchema {
-    prop_converter: Arc<dyn PropConverter<JsonValue, Error = Error> + Sync + Send>,
+    event_publisher: Arc<dyn Publisher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl CreateSchema {
     pub fn new(
-        prop_converter: Arc<dyn PropConverter<JsonValue, Error = Error> + Sync + Send>,
+        event_publisher: Arc<dyn Publisher + Sync + Send>,
         schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
     ) -> CreateSchema {
         CreateSchema {
-            prop_converter,
+            event_publisher,
             schema_repository,
         }
     }
@@ -38,11 +39,16 @@ impl CreateSchema {
             return Err(Error::SchemaAlreadyExists(id));
         }
 
-        let prop = self.prop_converter.from(cmd.schema)?;
+        let prop = cmd.schema.try_into()?;
 
         let mut schema = Schema::create(id, cmd.name, prop)?;
 
         self.schema_repository.save(&mut schema).await?;
+
+        self.event_publisher
+            .publish(&schema.events())
+            .await
+            .map_err(Error::CouldNotPublishEvents)?;
 
         Ok(CreateSchemaResponse {
             id: schema.id().to_string(),

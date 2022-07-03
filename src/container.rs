@@ -1,25 +1,26 @@
+use core_lib::events::LocalEventBus;
 use std::sync::Arc;
 
 use crate::{
     config::{Config, Storage},
     domain::Error,
-    infrastructure::{InMemSchemaRepository, JsonPropConverter},
+    infrastructure::InMemSchemaRepository,
 };
 
 pub struct Container {
-    pub prop_converter: Arc<JsonPropConverter>,
+    pub event_publisher: Arc<LocalEventBus>,
     pub schema_repository: Arc<InMemSchemaRepository>,
 }
 
 impl Container {
     pub fn build(config: &Config) -> Result<Container, Error> {
-        let prop_converter = Arc::new(JsonPropConverter::new());
+        let event_publisher = Arc::new(LocalEventBus::new());
         let schema_repository = Arc::new(match config.storage {
             Storage::InMem => InMemSchemaRepository::new(),
         });
 
         Ok(Container {
-            prop_converter,
+            event_publisher,
             schema_repository,
         })
     }

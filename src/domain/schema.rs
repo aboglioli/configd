@@ -1,7 +1,11 @@
 use async_trait::async_trait;
+use core_lib::events::{Event, EventCollector};
 use std::collections::HashMap;
 
-use crate::domain::{Config, Error, Id, Prop, Value};
+use crate::domain::{
+    Config, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id, Prop,
+    SchemaCreated, SchemaDeleted, SchemaRootPropChanged, Value,
+};
 
 #[async_trait]
 pub trait SchemaRepository {
@@ -19,6 +23,8 @@ pub struct Schema {
     root_prop: Prop,
 
     configs: HashMap<Id, Config>,
+
+    event_collector: EventCollector,
 }
 
 impl Schema {
@@ -27,6 +33,7 @@ impl Schema {
         name: String,
         root_prop: Prop,
         configs: HashMap<Id, Config>,
+        event_collector: Option<EventCollector>,
     ) -> Result<Schema, Error> {
         if name.is_empty() {
             return Err(Error::EmptyName);
@@ -37,11 +44,29 @@ impl Schema {
             name,
             root_prop,
             configs,
+            event_collector: event_collector.unwrap_or_else(EventCollector::create),
         })
     }
 
     pub fn create(id: Id, name: String, root_prop: Prop) -> Result<Schema, Error> {
-        Schema::new(id, name, root_prop, HashMap::new())
+        let mut schema = Schema::new(
+            id,
+            name,
+            root_prop,
+            HashMap::new(),
+            Some(EventCollector::create()),
+        )?;
+
+        schema
+            .event_collector
+            .record(SchemaCreated {
+                id: schema.id().to_string(),
+                name: schema.name().to_string(),
+                root_prop: schema.root_prop().clone().try_into()?,
+            })
+            .map_err(Error::CouldNotRecordEvent)?;
+
+        Ok(schema)
     }
 
     pub fn id(&self) -> &Id {
@@ -70,11 +95,29 @@ impl Schema {
             }
         }
 
+        self.event_collector
+            .record(SchemaRootPropChanged {
+                id: self.id.to_string(),
+                root_prop: self.root_prop.clone().try_into()?,
+            })
+            .map_err(Error::CouldNotRecordEvent)?;
+
         Ok(())
     }
 
-    pub fn get_config(&self, id: &Id) -> Option<&Config> {
-        self.configs.get(id)
+    pub fn get_config(&mut self, id: &Id) -> Result<&Config, Error> {
+        if let Some(config) = self.configs.get(id) {
+            self.event_collector
+                .record(ConfigAccessed {
+                    id: config.id().to_string(),
+                    schema_id: self.id.to_string(),
+                })
+                .map_err(Error::CouldNotRecordEvent)?;
+
+            Ok(config)
+        } else {
+            Err(Error::ConfigNotFound(id.clone()))
+        }
     }
 
     pub fn add_config(&mut self, id: Id, name: String, data: Value) -> Result<(), Error> {
@@ -88,6 +131,16 @@ impl Schema {
         }
 
         let config = Config::create(id, name, data, diff.is_empty())?;
+
+        self.event_collector
+            .record(ConfigCreated {
+                id: config.id().to_string(),
+                schema_id: self.id.to_string(),
+                data: config.data().into(),
+                valid: config.is_valid(),
+            })
+            .map_err(Error::CouldNotRecordEvent)?;
+
         self.configs.insert(config.id().clone(), config);
 
         Ok(())
@@ -102,6 +155,15 @@ impl Schema {
 
             config.change_data(data, diff.is_empty())?;
 
+            self.event_collector
+                .record(ConfigDataChanged {
+                    id: config.id().to_string(),
+                    schema_id: self.id.to_string(),
+                    data: config.data().into(),
+                    valid: config.is_valid(),
+                })
+                .map_err(Error::CouldNotRecordEvent)?;
+
             return Ok(());
         }
 
@@ -115,7 +177,32 @@ impl Schema {
 
         self.configs.remove(id);
 
+        self.event_collector
+            .record(ConfigDeleted {
+                id: id.to_string(),
+                schema_id: self.id.to_string(),
+            })
+            .map_err(Error::CouldNotRecordEvent)?;
+
         Ok(())
+    }
+
+    pub fn delete(&mut self) -> Result<(), Error> {
+        if !self.configs.is_empty() {
+            return Err(Error::SchemaContainsConfigs(self.id.clone()));
+        }
+
+        self.event_collector
+            .record(SchemaDeleted {
+                id: self.id.to_string(),
+            })
+            .map_err(Error::CouldNotRecordEvent)?;
+
+        Ok(())
+    }
+
+    pub fn events(&mut self) -> Vec<Event> {
+        self.event_collector.drain()
     }
 }
 
@@ -167,6 +254,7 @@ mod tests {
                 ),
             ])),
             HashMap::new(),
+            None,
         )
         .unwrap();
 

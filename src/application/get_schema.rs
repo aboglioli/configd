@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, PropConverter, SchemaRepository};
+use crate::domain::{Error, Id, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct GetSchemaCommand {
@@ -19,19 +19,12 @@ pub struct GetSchemaResponse {
 }
 
 pub struct GetSchema {
-    prop_converter: Arc<dyn PropConverter<JsonValue, Error = Error> + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl GetSchema {
-    pub fn new(
-        prop_converter: Arc<dyn PropConverter<JsonValue, Error = Error> + Sync + Send>,
-        schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
-    ) -> GetSchema {
-        GetSchema {
-            prop_converter,
-            schema_repository,
-        }
+    pub fn new(schema_repository: Arc<dyn SchemaRepository + Sync + Send>) -> GetSchema {
+        GetSchema { schema_repository }
     }
 
     pub async fn exec(&self, cmd: GetSchemaCommand) -> Result<GetSchemaResponse, Error> {
@@ -41,7 +34,7 @@ impl GetSchema {
             return Ok(GetSchemaResponse {
                 id: schema.id().to_string(),
                 name: schema.name().to_string(),
-                schema: self.prop_converter.to(schema.root_prop().clone())?,
+                schema: schema.root_prop().clone().try_into()?,
                 configs: schema.configs().len(),
             });
         }

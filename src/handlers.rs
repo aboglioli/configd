@@ -3,8 +3,8 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use serde_json::json;
-use std::sync::Arc;
+use serde::Serialize;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     application::{
@@ -14,16 +14,19 @@ use crate::{
         UpdateSchemaCommand, ValidateConfig, ValidateConfigCommand,
     },
     container::Container,
-    domain::Error,
+    domain::{Error, Reason},
 };
 
 // Error
+#[derive(Serialize)]
+pub struct ErrorDto {
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diffs: Option<HashMap<String, Vec<Reason>>>,
+}
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        // let (status, code) = match {
-        //
-        // }
-
         let status = match self {
             Error::SchemaNotFound(_) | Error::ConfigNotFound(_) => StatusCode::NOT_FOUND,
             Error::EmptyId
@@ -39,17 +42,17 @@ impl IntoResponse for Error {
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
-        let body = Json(json!({
-            "code": self.code().to_string(),
-            "message": self.to_string(),
-            "diffs": if let Error::InvalidConfig(diff) = self {
+        let body = ErrorDto {
+            code: self.code().to_string(),
+            message: self.to_string(),
+            diffs: if let Error::InvalidConfig(diff) = self {
                 Some(diff.diffs().clone())
             } else {
                 None
             },
-        }));
+        };
 
-        (status, body).into_response()
+        (status, Json(body)).into_response()
     }
 }
 
@@ -63,10 +66,7 @@ pub async fn get_schema_by_id(
     Path(schema_id): Path<String>,
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
-    let serv = GetSchema::new(
-        container.prop_converter.clone(),
-        container.schema_repository.clone(),
-    );
+    let serv = GetSchema::new(container.schema_repository.clone());
 
     let res = serv.exec(GetSchemaCommand { schema_id }).await?;
 
@@ -78,7 +78,7 @@ pub async fn create_schema(
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
     let serv = CreateSchema::new(
-        container.prop_converter.clone(),
+        container.event_publisher.clone(),
         container.schema_repository.clone(),
     );
 
@@ -96,7 +96,7 @@ pub async fn update_schema(
     cmd.schema_id = schema_id;
 
     let serv = UpdateSchema::new(
-        container.prop_converter.clone(),
+        container.event_publisher.clone(),
         container.schema_repository.clone(),
     );
 
@@ -109,7 +109,10 @@ pub async fn delete_schema(
     Path(schema_id): Path<String>,
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
-    let serv = DeleteSchema::new(container.schema_repository.clone());
+    let serv = DeleteSchema::new(
+        container.event_publisher.clone(),
+        container.schema_repository.clone(),
+    );
 
     let res = serv.exec(DeleteSchemaCommand { schema_id }).await?;
 
@@ -135,7 +138,10 @@ pub async fn get_config_by_id(
     Path((schema_id, config_id)): Path<(String, String)>,
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
-    let serv = GetConfig::new(container.schema_repository.clone());
+    let serv = GetConfig::new(
+        container.event_publisher.clone(),
+        container.schema_repository.clone(),
+    );
 
     let res = serv
         .exec(GetConfigCommand {
@@ -154,7 +160,10 @@ pub async fn create_config(
 ) -> Result<impl IntoResponse, Error> {
     cmd.schema_id = schema_id;
 
-    let serv = CreateConfig::new(container.schema_repository.clone());
+    let serv = CreateConfig::new(
+        container.event_publisher.clone(),
+        container.schema_repository.clone(),
+    );
 
     let res = serv.exec(cmd).await?;
 
@@ -169,7 +178,10 @@ pub async fn update_config(
     cmd.schema_id = schema_id;
     cmd.config_id = config_id;
 
-    let serv = UpdateConfig::new(container.schema_repository.clone());
+    let serv = UpdateConfig::new(
+        container.event_publisher.clone(),
+        container.schema_repository.clone(),
+    );
 
     let res = serv.exec(cmd).await?;
 
@@ -185,7 +197,10 @@ pub async fn delete_config(
         config_id,
     };
 
-    let serv = DeleteConfig::new(container.schema_repository.clone());
+    let serv = DeleteConfig::new(
+        container.event_publisher.clone(),
+        container.schema_repository.clone(),
+    );
 
     let res = serv.exec(cmd).await?;
 

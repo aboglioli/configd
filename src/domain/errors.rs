@@ -1,3 +1,4 @@
+use core_lib::errors::Error as CoreError;
 use thiserror::Error;
 
 use crate::domain::{Diff, Id, Kind};
@@ -11,6 +12,10 @@ pub enum Error {
     EmptyName,
     #[error("empty interval")]
     EmptyInterval,
+    #[error("could not record event")]
+    CouldNotRecordEvent(#[source] CoreError),
+    #[error("could not publish events")]
+    CouldNotPublishEvents(#[source] CoreError),
 
     // Props
     #[error("mismatched kinds: expected {expected}, found {found}")]
@@ -45,6 +50,8 @@ impl Error {
             Error::EmptyId => "empty_id",
             Error::EmptyName => "empty_name",
             Error::EmptyInterval => "empty_interval",
+            Error::CouldNotRecordEvent(_) => "could_not_record_event",
+            Error::CouldNotPublishEvents(_) => "could_not_publish_events",
             Error::MismatchedKinds { .. } => "mismatched_kinds",
             Error::CouldNotDeserializeProp(_) => "could_not_deserialize_prop",
             Error::InvalidArray => "invalid_array",

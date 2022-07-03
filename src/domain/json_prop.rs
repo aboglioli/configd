@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value as JsonValue};
 use std::collections::BTreeMap;
 
-use crate::domain::{Error, Interval, Prop, PropConverter, Value};
+use crate::domain::{Error, Interval, Prop, Value};
+
+const SCHEMA_KEY: &str = "$schema";
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -35,43 +37,17 @@ struct JsonProp {
     regex: Option<String>,
 }
 
-pub struct JsonPropConverter;
-
-impl JsonPropConverter {
-    const SCHEMA_KEY: &'static str = "$schema";
-
-    pub fn new() -> JsonPropConverter {
-        JsonPropConverter
-    }
-}
-
-impl PropConverter<String> for JsonPropConverter {
+impl TryFrom<JsonValue> for Prop {
     type Error = Error;
 
-    fn from(&self, props: String) -> Result<Prop, Self::Error> {
-        let value: JsonValue =
-            serde_json::from_str(&props).map_err(Error::CouldNotDeserializeProp)?;
-
-        self.from(value)
-    }
-
-    fn to(&self, prop: Prop) -> Result<String, Self::Error> {
-        let value: JsonValue = self.to(prop)?;
-
-        serde_json::to_string(&value).map_err(Error::CouldNotDeserializeProp)
-    }
-}
-
-impl PropConverter<JsonValue> for JsonPropConverter {
-    type Error = Error;
-
-    fn from(&self, props: JsonValue) -> Result<Prop, Self::Error> {
-        match props {
+    fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
+        println!("{:?}", value);
+        match value {
             JsonValue::Object(mut map) => {
                 // $schema
-                if let Some(value) = map.remove(Self::SCHEMA_KEY) {
-                    let prop: JsonProp = serde_json::from_value(value)
-                        .map_err(Error::CouldNotDeserializeProp)?;
+                if let Some(value) = map.remove(SCHEMA_KEY) {
+                    let prop: JsonProp =
+                        serde_json::from_value(value).map_err(Error::CouldNotDeserializeProp)?;
 
                     let default_value = prop.default_value.map(Value::from);
                     let allowed_values = prop
@@ -99,7 +75,7 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                 // Object
                 let mut object = BTreeMap::new();
                 for (key, value) in map.into_iter() {
-                    object.insert(key, self.from(value)?);
+                    object.insert(key, Self::try_from(value)?);
                 }
 
                 Ok(Prop::object(object))
@@ -109,13 +85,17 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                     return Err(Error::InvalidArray);
                 }
 
-                Ok(Prop::array(self.from(items.remove(0))?))
+                Ok(Prop::array(Self::try_from(items.remove(0))?))
             }
             _ => Err(Error::UnknownRootProp),
         }
     }
+}
 
-    fn to(&self, prop: Prop) -> Result<JsonValue, Error> {
+impl TryFrom<Prop> for JsonValue {
+    type Error = Error;
+
+    fn try_from(prop: Prop) -> Result<Self, Self::Error> {
         let value = match prop {
             Prop::Bool {
                 required,
@@ -130,11 +110,11 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                     regex: None,
                 };
 
-                let json_value = serde_json::to_value(&json_prop)
-                    .map_err(Error::CouldNotDeserializeProp)?;
+                let json_value =
+                    serde_json::to_value(&json_prop).map_err(Error::CouldNotDeserializeProp)?;
 
                 let mut map = Map::new();
-                map.insert(Self::SCHEMA_KEY.to_string(), json_value);
+                map.insert(SCHEMA_KEY.to_string(), json_value);
 
                 JsonValue::Object(map)
             }
@@ -157,11 +137,11 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                     regex: None,
                 };
 
-                let json_value = serde_json::to_value(&json_prop)
-                    .map_err(Error::CouldNotDeserializeProp)?;
+                let json_value =
+                    serde_json::to_value(&json_prop).map_err(Error::CouldNotDeserializeProp)?;
 
                 let mut map = Map::new();
-                map.insert(Self::SCHEMA_KEY.to_string(), json_value);
+                map.insert(SCHEMA_KEY.to_string(), json_value);
 
                 JsonValue::Object(map)
             }
@@ -184,11 +164,11 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                     regex: None,
                 };
 
-                let json_value = serde_json::to_value(&json_prop)
-                    .map_err(Error::CouldNotDeserializeProp)?;
+                let json_value =
+                    serde_json::to_value(&json_prop).map_err(Error::CouldNotDeserializeProp)?;
 
                 let mut map = Map::new();
-                map.insert(Self::SCHEMA_KEY.to_string(), json_value);
+                map.insert(SCHEMA_KEY.to_string(), json_value);
 
                 JsonValue::Object(map)
             }
@@ -208,20 +188,20 @@ impl PropConverter<JsonValue> for JsonPropConverter {
                     regex,
                 };
 
-                let json_value = serde_json::to_value(&json_prop)
-                    .map_err(Error::CouldNotDeserializeProp)?;
+                let json_value =
+                    serde_json::to_value(&json_prop).map_err(Error::CouldNotDeserializeProp)?;
 
                 let mut map = Map::new();
-                map.insert(Self::SCHEMA_KEY.to_string(), json_value);
+                map.insert(SCHEMA_KEY.to_string(), json_value);
 
                 JsonValue::Object(map)
             }
-            Prop::Array(prop) => JsonValue::Array(vec![self.to(*prop)?]),
+            Prop::Array(prop) => JsonValue::Array(vec![Self::try_from(*prop)?]),
             Prop::Object(map) => {
                 let mut object = Map::new();
 
                 for (key, prop) in map.into_iter() {
-                    object.insert(key, self.to(prop)?);
+                    object.insert(key, Self::try_from(prop)?);
                 }
 
                 JsonValue::Object(object)
@@ -238,7 +218,6 @@ mod tests {
 
     #[test]
     fn build_from_json_string() {
-        let converter = JsonPropConverter::new();
         let json = r#"{
             "env": {
                 "$schema": {
@@ -308,9 +287,11 @@ mod tests {
             ]
         }"#
         .to_string();
+        let value: JsonValue = serde_json::from_str(&json).unwrap();
+        let prop: Prop = value.try_into().unwrap();
 
         assert_eq!(
-            converter.from(json).unwrap(),
+            prop,
             Prop::Object(BTreeMap::from([
                 (
                     "env".to_string(),
@@ -391,84 +372,84 @@ mod tests {
 
     #[test]
     fn convert_to_json_string() {
-        let converter = JsonPropConverter::new();
-        let json_value: JsonValue = converter
-            .to(Prop::Object(BTreeMap::from([
-                (
-                    "env".to_string(),
+        let prop = Prop::Object(BTreeMap::from([
+            (
+                "env".to_string(),
+                Prop::string(
+                    true,
+                    None,
+                    Some(vec![
+                        Value::String("dev".to_string()),
+                        Value::String("stg".to_string()),
+                        Value::String("prod".to_string()),
+                    ]),
+                    None,
+                )
+                .unwrap(),
+            ),
+            (
+                "instances".to_string(),
+                Prop::int(
+                    false,
+                    Some(Value::Int(3)),
+                    None,
+                    Some(Interval::new(2, 10).unwrap()),
+                )
+                .unwrap(),
+            ),
+            (
+                "database_urls".to_string(),
+                Prop::array(
                     Prop::string(
                         true,
+                        Some(Value::String("http://localhost:1234".to_string())),
                         None,
-                        Some(vec![
-                            Value::String("dev".to_string()),
-                            Value::String("stg".to_string()),
-                            Value::String("prod".to_string()),
-                        ]),
-                        None,
+                        Some("^http://[a-z]+:[0-9]{2,4}$".to_string()),
                     )
                     .unwrap(),
                 ),
-                (
-                    "instances".to_string(),
-                    Prop::int(
-                        false,
-                        Some(Value::Int(3)),
-                        None,
-                        Some(Interval::new(2, 10).unwrap()),
-                    )
-                    .unwrap(),
-                ),
-                (
-                    "database_urls".to_string(),
-                    Prop::array(
-                        Prop::string(
-                            true,
-                            Some(Value::String("http://localhost:1234".to_string())),
-                            None,
-                            Some("^http://[a-z]+:[0-9]{2,4}$".to_string()),
-                        )
-                        .unwrap(),
-                    ),
-                ),
-                (
-                    "custom_service".to_string(),
-                    Prop::object(BTreeMap::from([
-                        (
-                            "urls".to_string(),
-                            Prop::array(
-                                Prop::string(
-                                    true,
-                                    Some(Value::String("http://localhost".to_string())),
-                                    None,
-                                    Some("^http://[a-z]+0[0-9]{1}$".to_string()),
-                                )
-                                .unwrap(),
-                            ),
-                        ),
-                        (
-                            "port".to_string(),
-                            Prop::int(
-                                false,
-                                Some(Value::Int(1234)),
+            ),
+            (
+                "custom_service".to_string(),
+                Prop::object(BTreeMap::from([
+                    (
+                        "urls".to_string(),
+                        Prop::array(
+                            Prop::string(
+                                true,
+                                Some(Value::String("http://localhost".to_string())),
                                 None,
-                                Some(Interval::new(1024, None).unwrap()),
+                                Some("^http://[a-z]+0[0-9]{1}$".to_string()),
                             )
                             .unwrap(),
                         ),
-                    ])),
-                ),
-                (
-                    "extra_services".to_string(),
-                    Prop::array(Prop::object(BTreeMap::from([
-                        ("id".to_string(), Prop::int(true, None, None, None).unwrap()),
-                        (
-                            "name".to_string(),
-                            Prop::string(false, None, None, None).unwrap(),
-                        ),
-                    ]))),
-                ),
-            ])))
-            .unwrap();
+                    ),
+                    (
+                        "port".to_string(),
+                        Prop::int(
+                            false,
+                            Some(Value::Int(1234)),
+                            None,
+                            Some(Interval::new(1024, None).unwrap()),
+                        )
+                        .unwrap(),
+                    ),
+                ])),
+            ),
+            (
+                "extra_services".to_string(),
+                Prop::array(Prop::object(BTreeMap::from([
+                    ("id".to_string(), Prop::int(true, None, None, None).unwrap()),
+                    (
+                        "name".to_string(),
+                        Prop::string(false, None, None, None).unwrap(),
+                    ),
+                ]))),
+            ),
+        ]));
+
+        let json_value: JsonValue = prop.try_into().unwrap();
+
         assert_eq!(
             json_value,
             serde_json::from_str::<JsonValue>(

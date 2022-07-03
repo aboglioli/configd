@@ -1,3 +1,4 @@
+use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
@@ -19,12 +20,19 @@ pub struct CreateConfigResponse {
 }
 
 pub struct CreateConfig {
+    event_publisher: Arc<dyn Publisher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl CreateConfig {
-    pub fn new(schema_repository: Arc<dyn SchemaRepository + Sync + Send>) -> CreateConfig {
-        CreateConfig { schema_repository }
+    pub fn new(
+        event_publisher: Arc<dyn Publisher + Sync + Send>,
+        schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
+    ) -> CreateConfig {
+        CreateConfig {
+            event_publisher,
+            schema_repository,
+        }
     }
 
     pub async fn exec(&self, cmd: CreateConfigCommand) -> Result<CreateConfigResponse, Error> {
@@ -36,6 +44,11 @@ impl CreateConfig {
             schema.add_config(config_id.clone(), cmd.name, cmd.data.into())?;
 
             self.schema_repository.save(&mut schema).await?;
+
+            self.event_publisher
+                .publish(&schema.events())
+                .await
+                .map_err(Error::CouldNotPublishEvents)?;
 
             return Ok(CreateConfigResponse {
                 schema_id: schema_id.to_string(),
