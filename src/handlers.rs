@@ -66,10 +66,7 @@ pub async fn get_schema_by_id(
     Path(schema_id): Path<String>,
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
-    let serv = GetSchema::new(
-        container.prop_converter.clone(),
-        container.schema_repository.clone(),
-    );
+    let serv = GetSchema::new(container.schema_repository.clone());
 
     let res = serv.exec(GetSchemaCommand { schema_id }).await?;
 
@@ -80,10 +77,7 @@ pub async fn create_schema(
     Json(cmd): Json<CreateSchemaCommand>,
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
-    let serv = CreateSchema::new(
-        container.prop_converter.clone(),
-        container.schema_repository.clone(),
-    );
+    let serv = CreateSchema::new(container.schema_repository.clone());
 
     let res = serv.exec(cmd).await?;
 
@@ -98,10 +92,7 @@ pub async fn update_schema(
 ) -> Result<impl IntoResponse, Error> {
     cmd.schema_id = schema_id;
 
-    let serv = UpdateSchema::new(
-        container.prop_converter.clone(),
-        container.schema_repository.clone(),
-    );
+    let serv = UpdateSchema::new(container.schema_repository.clone());
 
     let res = serv.exec(cmd).await?;
 
