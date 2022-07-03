@@ -25,7 +25,7 @@ pub enum Error {
 
     // Entities
     #[error("could not record event")]
-    CouldNotRecordEvent(CoreError),
+    CouldNotRecordEvent(#[source] CoreError),
     #[error("schema not found: {0}")]
     SchemaNotFound(Id),
     #[error("schema already exists: {0}")]

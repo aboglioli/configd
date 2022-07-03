@@ -2,7 +2,10 @@ use async_trait::async_trait;
 use core_lib::events::{Event, EventCollector};
 use std::collections::HashMap;
 
-use crate::domain::{Config, Error, Id, Prop, SchemaCreated, Value};
+use crate::domain::{
+    Config, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id, Prop, SchemaCreated,
+    SchemaDeleted, SchemaRootPropChanged, Value,
+};
 
 #[async_trait]
 pub trait SchemaRepository {
@@ -59,6 +62,7 @@ impl Schema {
             .record(SchemaCreated {
                 id: schema.id().to_string(),
                 name: schema.name().to_string(),
+                root_prop: schema.root_prop().clone().try_into()?,
             })
             .map_err(Error::CouldNotRecordEvent)?;
 
@@ -91,6 +95,13 @@ impl Schema {
             }
         }
 
+        self.event_collector
+            .record(SchemaRootPropChanged {
+                id: self.id.to_string(),
+                root_prop: self.root_prop.clone().try_into()?,
+            })
+            .map_err(Error::CouldNotRecordEvent)?;
+
         Ok(())
     }
 
@@ -109,6 +120,16 @@ impl Schema {
         }
 
         let config = Config::create(id, name, data, diff.is_empty())?;
+
+        self.event_collector
+            .record(ConfigCreated {
+                id: config.id().to_string(),
+                schema_id: self.id.to_string(),
+                data: config.data().into(),
+                valid: config.is_valid(),
+            })
+            .map_err(Error::CouldNotRecordEvent)?;
+
         self.configs.insert(config.id().clone(), config);
 
         Ok(())
@@ -123,6 +144,15 @@ impl Schema {
 
             config.change_data(data, diff.is_empty())?;
 
+            self.event_collector
+                .record(ConfigDataChanged {
+                    id: config.id().to_string(),
+                    schema_id: self.id.to_string(),
+                    data: config.data().into(),
+                    valid: config.is_valid(),
+                })
+                .map_err(Error::CouldNotRecordEvent)?;
+
             return Ok(());
         }
 
@@ -135,6 +165,27 @@ impl Schema {
         }
 
         self.configs.remove(id);
+
+        self.event_collector
+            .record(ConfigDeleted {
+                id: id.to_string(),
+                schema_id: self.id.to_string(),
+            })
+            .map_err(Error::CouldNotRecordEvent)?;
+
+        Ok(())
+    }
+
+    pub fn delete(&mut self) -> Result<(), Error> {
+        if !self.configs.is_empty() {
+            return Err(Error::SchemaContainsConfigs(self.id.clone()));
+        }
+
+        self.event_collector
+            .record(SchemaDeleted {
+                id: self.id.to_string(),
+            })
+            .map_err(Error::CouldNotRecordEvent)?;
 
         Ok(())
     }
