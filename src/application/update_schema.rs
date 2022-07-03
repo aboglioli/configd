@@ -1,3 +1,4 @@
+use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
@@ -17,12 +18,19 @@ pub struct UpdateSchemaResponse {
 }
 
 pub struct UpdateSchema {
+    event_publisher: Arc<dyn Publisher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl UpdateSchema {
-    pub fn new(schema_repository: Arc<dyn SchemaRepository + Sync + Send>) -> UpdateSchema {
-        UpdateSchema { schema_repository }
+    pub fn new(
+        event_publisher: Arc<dyn Publisher + Sync + Send>,
+        schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
+    ) -> UpdateSchema {
+        UpdateSchema {
+            event_publisher,
+            schema_repository,
+        }
     }
 
     pub async fn exec(&self, cmd: UpdateSchemaCommand) -> Result<UpdateSchemaResponse, Error> {
@@ -31,10 +39,14 @@ impl UpdateSchema {
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let prop = cmd.schema.try_into()?;
 
-            // TODO: update related configs
             schema.change_root_prop(prop)?;
 
             self.schema_repository.save(&mut schema).await?;
+
+            self.event_publisher
+                .publish(&schema.events())
+                .await
+                .map_err(Error::CouldNotPublishEvents)?;
 
             return Ok(UpdateSchemaResponse {
                 id: schema.id().to_string(),

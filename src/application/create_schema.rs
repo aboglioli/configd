@@ -1,3 +1,4 @@
+use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
@@ -16,12 +17,19 @@ pub struct CreateSchemaResponse {
 }
 
 pub struct CreateSchema {
+    event_publisher: Arc<dyn Publisher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl CreateSchema {
-    pub fn new(schema_repository: Arc<dyn SchemaRepository + Sync + Send>) -> CreateSchema {
-        CreateSchema { schema_repository }
+    pub fn new(
+        event_publisher: Arc<dyn Publisher + Sync + Send>,
+        schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
+    ) -> CreateSchema {
+        CreateSchema {
+            event_publisher,
+            schema_repository,
+        }
     }
 
     pub async fn exec(&self, cmd: CreateSchemaCommand) -> Result<CreateSchemaResponse, Error> {
@@ -36,6 +44,11 @@ impl CreateSchema {
         let mut schema = Schema::create(id, cmd.name, prop)?;
 
         self.schema_repository.save(&mut schema).await?;
+
+        self.event_publisher
+            .publish(&schema.events())
+            .await
+            .map_err(Error::CouldNotPublishEvents)?;
 
         Ok(CreateSchemaResponse {
             id: schema.id().to_string(),

@@ -12,6 +12,10 @@ pub enum Error {
     EmptyName,
     #[error("empty interval")]
     EmptyInterval,
+    #[error("could not record event")]
+    CouldNotRecordEvent(#[source] CoreError),
+    #[error("could not publish events")]
+    CouldNotPublishEvents(#[source] CoreError),
 
     // Props
     #[error("mismatched kinds: expected {expected}, found {found}")]
@@ -24,8 +28,6 @@ pub enum Error {
     UnknownRootProp,
 
     // Entities
-    #[error("could not record event")]
-    CouldNotRecordEvent(#[source] CoreError),
     #[error("schema not found: {0}")]
     SchemaNotFound(Id),
     #[error("schema already exists: {0}")]
@@ -48,11 +50,12 @@ impl Error {
             Error::EmptyId => "empty_id",
             Error::EmptyName => "empty_name",
             Error::EmptyInterval => "empty_interval",
+            Error::CouldNotRecordEvent(_) => "could_not_record_event",
+            Error::CouldNotPublishEvents(_) => "could_not_publish_events",
             Error::MismatchedKinds { .. } => "mismatched_kinds",
             Error::CouldNotDeserializeProp(_) => "could_not_deserialize_prop",
             Error::InvalidArray => "invalid_array",
             Error::UnknownRootProp => "unknown_root_prop",
-            Error::CouldNotRecordEvent(_) => "could_not_record_event",
             Error::SchemaNotFound(_) => "schema_not_found",
             Error::SchemaAlreadyExists(_) => "schema_already_exists",
             Error::SchemaContainsConfigs(_) => "schema_contains_configs",
