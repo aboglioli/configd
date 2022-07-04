@@ -1,3 +1,5 @@
+use core_lib::models::{Timestamps, Version};
+
 use crate::domain::{Error, Id, Value};
 
 #[derive(Debug, Clone)]
@@ -7,10 +9,20 @@ pub struct Config {
 
     data: Value,
     valid: bool,
+
+    timestamps: Timestamps,
+    version: Version,
 }
 
 impl Config {
-    pub fn new(id: Id, name: String, data: Value, valid: bool) -> Result<Config, Error> {
+    pub fn new(
+        id: Id,
+        name: String,
+        data: Value,
+        valid: bool,
+        timestamps: Timestamps,
+        version: Version,
+    ) -> Result<Config, Error> {
         if name.is_empty() {
             return Err(Error::EmptyName);
         }
@@ -20,11 +32,20 @@ impl Config {
             name,
             data,
             valid,
+            timestamps,
+            version,
         })
     }
 
     pub fn create(id: Id, name: String, data: Value, valid: bool) -> Result<Config, Error> {
-        Config::new(id, name, data, valid)
+        Config::new(
+            id,
+            name,
+            data,
+            valid,
+            Timestamps::create(),
+            Version::init_version(),
+        )
     }
 
     pub fn id(&self) -> &Id {
@@ -43,14 +64,28 @@ impl Config {
         self.valid
     }
 
+    pub fn timestamps(&self) -> &Timestamps {
+        &self.timestamps
+    }
+
+    pub fn version(&self) -> &Version {
+        &self.version
+    }
+
     pub fn change_data(&mut self, data: Value, valid: bool) -> Result<(), Error> {
         self.data = data;
         self.valid = valid;
+
+        self.timestamps = self.timestamps.update();
+        self.version = self.version.incr();
 
         Ok(())
     }
 
     pub fn mark_as_invalid(&mut self) {
         self.valid = false;
+
+        self.timestamps = self.timestamps.update();
+        self.version = self.version.incr();
     }
 }

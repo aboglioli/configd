@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -20,6 +21,9 @@ pub struct GetConfigResponse {
     pub name: String,
     pub data: JsonValue,
     pub valid: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub version: i64,
 }
 
 pub struct GetConfig {
@@ -52,6 +56,9 @@ impl GetConfig {
                 name: config.name().to_string(),
                 data: config.data().into(),
                 valid: config.is_valid(),
+                created_at: config.timestamps().created_at().clone(),
+                updated_at: config.timestamps().updated_at().clone(),
+                version: config.version().value(),
             };
 
             self.event_publisher
