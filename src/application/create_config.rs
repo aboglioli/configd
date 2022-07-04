@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, SchemaRepository};
+use crate::domain::{Error, Hasher, Id, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct CreateConfigCommand {
@@ -21,16 +21,19 @@ pub struct CreateConfigResponse {
 
 pub struct CreateConfig {
     event_publisher: Arc<dyn Publisher + Sync + Send>,
+    hasher: Arc<dyn Hasher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl CreateConfig {
     pub fn new(
         event_publisher: Arc<dyn Publisher + Sync + Send>,
+        hasher: Arc<dyn Hasher + Sync + Send>,
         schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
     ) -> CreateConfig {
         CreateConfig {
             event_publisher,
+            hasher,
             schema_repository,
         }
     }
@@ -41,7 +44,12 @@ impl CreateConfig {
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::slug(&cmd.name)?;
 
-            schema.add_config(config_id.clone(), cmd.name, cmd.data.into())?;
+            // It's safe because data is a serde_json::Value, an already validated JSON
+            // representation.
+            let data_hex = serde_json::to_vec(&cmd.data).unwrap();
+            let hash = self.hasher.hash(&data_hex);
+
+            schema.add_config(config_id.clone(), cmd.name, cmd.data.into(), hash)?;
 
             self.schema_repository.save(&mut schema).await?;
 

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, SchemaRepository};
+use crate::domain::{Error, Hasher, Id, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct UpdateConfigCommand {
@@ -22,16 +22,19 @@ pub struct UpdateConfigResponse {
 
 pub struct UpdateConfig {
     event_publisher: Arc<dyn Publisher + Sync + Send>,
+    hasher: Arc<dyn Hasher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl UpdateConfig {
     pub fn new(
         event_publisher: Arc<dyn Publisher + Sync + Send>,
+        hasher: Arc<dyn Hasher + Sync + Send>,
         schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
     ) -> UpdateConfig {
         UpdateConfig {
             event_publisher,
+            hasher,
             schema_repository,
         }
     }

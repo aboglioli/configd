@@ -12,10 +12,6 @@ pub enum Error {
     EmptyName,
     #[error("empty interval")]
     EmptyInterval,
-    #[error("could not record event")]
-    CouldNotRecordEvent(#[source] CoreError),
-    #[error("could not publish events")]
-    CouldNotPublishEvents(#[source] CoreError),
 
     // Props
     #[error("mismatched kinds: expected {expected}, found {found}")]
@@ -28,6 +24,10 @@ pub enum Error {
     UnknownRootProp,
 
     // Entities
+    #[error("could not record event")]
+    CouldNotRecordEvent(#[source] CoreError),
+    #[error("could not publish events")]
+    CouldNotPublishEvents(#[source] CoreError),
     #[error("schema not found: {0}")]
     SchemaNotFound(Id),
     #[error("schema already exists: {0}")]

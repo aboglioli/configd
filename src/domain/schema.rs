@@ -147,7 +147,13 @@ impl Schema {
         }
     }
 
-    pub fn add_config(&mut self, id: Id, name: String, data: Value) -> Result<(), Error> {
+    pub fn add_config(
+        &mut self,
+        id: Id,
+        name: String,
+        data: Value,
+        checksum: Vec<u8>,
+    ) -> Result<(), Error> {
         if self.configs.contains_key(&id) {
             return Err(Error::ConfigAlreadyExists(id));
         }
@@ -157,7 +163,7 @@ impl Schema {
             return Err(Error::InvalidConfig(diff));
         }
 
-        let config = Config::create(id, name, data, diff.is_empty())?;
+        let config = Config::create(id, name, data, diff.is_empty(), checksum)?;
 
         self.event_collector
             .record(ConfigCreated {
