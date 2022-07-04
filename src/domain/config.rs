@@ -9,6 +9,7 @@ pub struct Config {
 
     data: Value,
     valid: bool,
+    checksum: Vec<u8>,
 
     timestamps: Timestamps,
     version: Version,
@@ -20,6 +21,7 @@ impl Config {
         name: String,
         data: Value,
         valid: bool,
+        checksum: Vec<u8>,
         timestamps: Timestamps,
         version: Version,
     ) -> Result<Config, Error> {
@@ -32,17 +34,25 @@ impl Config {
             name,
             data,
             valid,
+            checksum,
             timestamps,
             version,
         })
     }
 
-    pub fn create(id: Id, name: String, data: Value, valid: bool) -> Result<Config, Error> {
+    pub fn create(
+        id: Id,
+        name: String,
+        data: Value,
+        valid: bool,
+        checksum: Vec<u8>,
+    ) -> Result<Config, Error> {
         Config::new(
             id,
             name,
             data,
             valid,
+            checksum,
             Timestamps::create(),
             Version::init_version(),
         )
@@ -64,6 +74,10 @@ impl Config {
         self.valid
     }
 
+    pub fn checksum(&self) -> &[u8] {
+        &self.checksum
+    }
+
     pub fn timestamps(&self) -> &Timestamps {
         &self.timestamps
     }
@@ -72,9 +86,15 @@ impl Config {
         &self.version
     }
 
-    pub fn change_data(&mut self, data: Value, valid: bool) -> Result<(), Error> {
+    pub fn change_data(
+        &mut self,
+        data: Value,
+        valid: bool,
+        checksum: Vec<u8>,
+    ) -> Result<(), Error> {
         self.data = data;
         self.valid = valid;
+        self.checksum = checksum;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();

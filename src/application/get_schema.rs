@@ -12,11 +12,22 @@ pub struct GetSchemaCommand {
 }
 
 #[derive(Serialize)]
+pub struct ConfigDto {
+    pub id: String,
+    pub name: String,
+    pub valid: bool,
+    pub checksum: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub version: i64,
+}
+
+#[derive(Serialize)]
 pub struct GetSchemaResponse {
     pub id: String,
     pub name: String,
     pub schema: JsonValue,
-    pub configs: usize,
+    pub configs: Vec<ConfigDto>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub version: i64,
@@ -39,7 +50,19 @@ impl GetSchema {
                 id: schema.id().to_string(),
                 name: schema.name().to_string(),
                 schema: schema.root_prop().clone().try_into()?,
-                configs: schema.configs().len(),
+                configs: schema
+                    .configs()
+                    .values()
+                    .map(|config| ConfigDto {
+                        id: config.id().to_string(),
+                        name: config.name().to_string(),
+                        valid: config.is_valid(),
+                        checksum: hex::encode(config.checksum()),
+                        created_at: config.timestamps().created_at().clone(),
+                        updated_at: config.timestamps().updated_at().clone(),
+                        version: config.version().value(),
+                    })
+                    .collect(),
                 created_at: schema.timestamps().created_at().clone(),
                 updated_at: schema.timestamps().updated_at().clone(),
                 version: schema.version().value(),

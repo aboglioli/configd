@@ -41,7 +41,6 @@ impl TryFrom<JsonValue> for Prop {
     type Error = Error;
 
     fn try_from(value: JsonValue) -> Result<Self, Self::Error> {
-        println!("{:?}", value);
         match value {
             JsonValue::Object(mut map) => {
                 // $schema

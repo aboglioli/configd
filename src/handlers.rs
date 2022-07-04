@@ -162,6 +162,7 @@ pub async fn create_config(
 
     let serv = CreateConfig::new(
         container.event_publisher.clone(),
+        container.hasher.clone(),
         container.schema_repository.clone(),
     );
 
@@ -180,6 +181,7 @@ pub async fn update_config(
 
     let serv = UpdateConfig::new(
         container.event_publisher.clone(),
+        container.hasher.clone(),
         container.schema_repository.clone(),
     );
 
