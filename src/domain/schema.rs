@@ -223,6 +223,9 @@ impl Schema {
             })
             .map_err(Error::CouldNotRecordEvent)?;
 
+        self.timestamps = self.timestamps.update();
+        self.version = self.version.incr();
+
         Ok(())
     }
 
