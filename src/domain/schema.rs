@@ -1,5 +1,8 @@
 use async_trait::async_trait;
-use core_lib::events::{Event, EventCollector};
+use core_lib::{
+    events::{Event, EventCollector},
+    models::{Timestamps, Version},
+};
 use std::collections::HashMap;
 
 use crate::domain::{
@@ -24,6 +27,9 @@ pub struct Schema {
 
     configs: HashMap<Id, Config>,
 
+    timestamps: Timestamps,
+    version: Version,
+
     event_collector: EventCollector,
 }
 
@@ -33,6 +39,8 @@ impl Schema {
         name: String,
         root_prop: Prop,
         configs: HashMap<Id, Config>,
+        timestamps: Timestamps,
+        version: Version,
         event_collector: Option<EventCollector>,
     ) -> Result<Schema, Error> {
         if name.is_empty() {
@@ -44,6 +52,8 @@ impl Schema {
             name,
             root_prop,
             configs,
+            timestamps,
+            version,
             event_collector: event_collector.unwrap_or_else(EventCollector::create),
         })
     }
@@ -54,6 +64,8 @@ impl Schema {
             name,
             root_prop,
             HashMap::new(),
+            Timestamps::create(),
+            Version::init_version(),
             Some(EventCollector::create()),
         )?;
 
@@ -85,6 +97,18 @@ impl Schema {
         &self.configs
     }
 
+    pub fn timestamps(&self) -> &Timestamps {
+        &self.timestamps
+    }
+
+    pub fn version(&self) -> &Version {
+        &self.version
+    }
+
+    pub fn events(&mut self) -> Vec<Event> {
+        self.event_collector.drain()
+    }
+
     pub fn change_root_prop(&mut self, prop: Prop) -> Result<(), Error> {
         self.root_prop = prop;
 
@@ -101,6 +125,9 @@ impl Schema {
                 root_prop: self.root_prop.clone().try_into()?,
             })
             .map_err(Error::CouldNotRecordEvent)?;
+
+        self.timestamps = self.timestamps.update();
+        self.version = self.version.incr();
 
         Ok(())
     }
@@ -143,6 +170,9 @@ impl Schema {
 
         self.configs.insert(config.id().clone(), config);
 
+        self.timestamps = self.timestamps.update();
+        self.version = self.version.incr();
+
         Ok(())
     }
 
@@ -163,6 +193,9 @@ impl Schema {
                     valid: config.is_valid(),
                 })
                 .map_err(Error::CouldNotRecordEvent)?;
+
+            self.timestamps = self.timestamps.update();
+            self.version = self.version.incr();
 
             return Ok(());
         }
@@ -198,11 +231,9 @@ impl Schema {
             })
             .map_err(Error::CouldNotRecordEvent)?;
 
-        Ok(())
-    }
+        self.timestamps = self.timestamps.delete();
 
-    pub fn events(&mut self) -> Vec<Event> {
-        self.event_collector.drain()
+        Ok(())
     }
 }
 
@@ -254,6 +285,8 @@ mod tests {
                 ),
             ])),
             HashMap::new(),
+            Timestamps::create(),
+            Version::init_version(),
             None,
         )
         .unwrap();

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
@@ -16,6 +17,9 @@ pub struct GetSchemaResponse {
     pub name: String,
     pub schema: JsonValue,
     pub configs: usize,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub version: i64,
 }
 
 pub struct GetSchema {
@@ -36,6 +40,9 @@ impl GetSchema {
                 name: schema.name().to_string(),
                 schema: schema.root_prop().clone().try_into()?,
                 configs: schema.configs().len(),
+                created_at: schema.timestamps().created_at().clone(),
+                updated_at: schema.timestamps().updated_at().clone(),
+                version: schema.version().value(),
             });
         }
 
