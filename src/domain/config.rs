@@ -86,9 +86,15 @@ impl Config {
         &self.version
     }
 
-    pub fn change_data(&mut self, data: Value, valid: bool) -> Result<(), Error> {
+    pub fn change_data(
+        &mut self,
+        data: Value,
+        valid: bool,
+        checksum: Vec<u8>,
+    ) -> Result<(), Error> {
         self.data = data;
         self.valid = valid;
+        self.checksum = checksum;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();

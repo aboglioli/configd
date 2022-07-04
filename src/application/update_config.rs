@@ -45,7 +45,10 @@ impl UpdateConfig {
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::new(cmd.config_id)?;
 
-            schema.update_config(&config_id, cmd.data.into())?;
+            let data_hex = serde_json::to_vec(&cmd.data).unwrap();
+            let hash = self.hasher.hash(&data_hex);
+
+            schema.update_config(&config_id, cmd.data.into(), hash)?;
 
             self.schema_repository.save(&mut schema).await?;
 

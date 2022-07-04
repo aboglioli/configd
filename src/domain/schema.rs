@@ -182,14 +182,14 @@ impl Schema {
         Ok(())
     }
 
-    pub fn update_config(&mut self, id: &Id, data: Value) -> Result<(), Error> {
+    pub fn update_config(&mut self, id: &Id, data: Value, checksum: Vec<u8>) -> Result<(), Error> {
         if let Some(config) = self.configs.get_mut(id) {
             let diff = self.root_prop.validate(&data);
             if !diff.is_empty() {
                 return Err(Error::InvalidConfig(diff));
             }
 
-            config.change_data(data, diff.is_empty())?;
+            config.change_data(data, diff.is_empty(), checksum)?;
 
             self.event_collector
                 .record(ConfigDataChanged {
