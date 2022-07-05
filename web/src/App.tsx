@@ -1,12 +1,12 @@
 import React from 'react';
 import './App.css';
 
+import Schemas from 'pages/Schemas';
+
 const App = () => {
   return (
     <div className="main-container">
-      <header className="header">
-        <h1>Schemas</h1>
-      </header>
+      <Schemas />
     </div>
   );
 };

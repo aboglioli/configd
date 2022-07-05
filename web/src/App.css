@@ -1,3 +1,11 @@
+:root {
+  --bg-light-color: #fff;
+  --bg-gray-color: #efefef;
+  --bg-dark-gray-color: #cdcdcd;
+  --header-bg-color: #2c4770;
+  --header-fg-color: #758aa8;
+}
+
 .main-container {
-  padding: 20px;
+  background-color: var(--bg-gray-color);
 }

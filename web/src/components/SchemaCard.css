@@ -1,0 +1,30 @@
+.schema {
+  background-color: var(--bg-light-color);
+  border: 2px solid var(--bg-dark-gray-color);
+  padding: 20px;
+}
+
+.schema__title {
+  color: #464646;
+}
+
+.schema__subtitle {
+  color: #888;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.schema__content {
+  font-size: 1rem;
+  padding: 15px 0;
+  color: #333;
+}
+
+.schema__content ul {
+  list-style-type: none;
+}
+
+.schema__footer {
+  color: #999;
+  font-weight: 400;
+}
