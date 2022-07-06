@@ -1,15 +1,9 @@
 .schemas {
 }
 
-.schemas__header {
-  background-color: var(--header-bg-color);
-  padding: 20px;
-}
-
-.schemas__header {
-  color: var(--header-fg-color);
-}
-
 .schemas__content {
-  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 1.4rem;
 }

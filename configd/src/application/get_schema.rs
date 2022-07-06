@@ -12,7 +12,7 @@ pub struct GetSchemaCommand {
 }
 
 #[derive(Serialize)]
-pub struct ConfigDto {
+pub struct SchemaConfigDto {
     pub id: String,
     pub name: String,
     pub valid: bool,
@@ -27,7 +27,7 @@ pub struct GetSchemaResponse {
     pub id: String,
     pub name: String,
     pub schema: JsonValue,
-    pub configs: Vec<ConfigDto>,
+    pub configs: Vec<SchemaConfigDto>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub version: i64,
@@ -53,7 +53,7 @@ impl GetSchema {
                 configs: schema
                     .configs()
                     .values()
-                    .map(|config| ConfigDto {
+                    .map(|config| SchemaConfigDto {
                         id: config.id().to_string(),
                         name: config.name().to_string(),
                         valid: config.is_valid(),

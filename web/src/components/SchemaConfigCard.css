@@ -1,0 +1,35 @@
+.schema-config {
+  background-color: #f5f5f5;
+  padding: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.schema-config__title {
+  align-items: center;
+  color: #464646;
+  display: flex;
+  padding: 0.5rem 0;
+}
+
+.schema-config__icon {
+  height: 16px;
+  margin-right: 0.5rem;
+  width: 16px;
+}
+
+.schema-config__subtitle {
+  color: #888;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.schema-config__content {
+  color: #333;
+  font-size: 0.8rem;
+  padding: 15px 0;
+}
+
+.schema-config__footer {
+  color: #999;
+  font-weight: 400;
+}

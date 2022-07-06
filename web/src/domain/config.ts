@@ -1,7 +1,7 @@
 export interface Config {
   id: string;
   name: string;
-  data?: unknown;
+  data: unknown;
   valid: boolean;
   checksum: string;
   created_at: Date;
