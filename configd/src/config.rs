@@ -32,6 +32,7 @@ impl FromStr for Environment {
 // Storage
 pub enum Storage {
     InMem,
+    SQLite,
 }
 
 impl FromStr for Storage {
@@ -40,6 +41,7 @@ impl FromStr for Storage {
     fn from_str(s: &str) -> Result<Storage, Self::Err> {
         match s {
             "in-mem" => Ok(Storage::InMem),
+            "sqlite" => Ok(Storage::SQLite),
             _ => Err(ConfigError::InvalidStorage(s.to_string())),
         }
     }

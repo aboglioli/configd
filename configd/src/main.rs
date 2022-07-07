@@ -17,7 +17,7 @@ use crate::{config::Config, container::Container};
 async fn main() {
     let config = Config::load().unwrap();
 
-    let container = Arc::new(Container::build(&config).unwrap());
+    let container = Arc::new(Container::build(&config).await.unwrap());
 
     let app = Router::new()
         .route("/health", get(handlers::health))
