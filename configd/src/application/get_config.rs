@@ -58,8 +58,8 @@ impl GetConfig {
                 data: config.data().into(),
                 valid: config.is_valid(),
                 checksum: hex::encode(config.checksum()),
-                created_at: config.timestamps().created_at().clone(),
-                updated_at: config.timestamps().updated_at().clone(),
+                created_at: *config.timestamps().created_at(),
+                updated_at: *config.timestamps().updated_at(),
                 version: config.version().value(),
             };
 

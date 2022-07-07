@@ -27,8 +27,8 @@ impl SqliteConfig {
             data: config.data().into(),
             valid: config.is_valid(),
             checksum: config.checksum().to_vec(),
-            created_at: config.timestamps().created_at().clone(),
-            updated_at: config.timestamps().updated_at().clone(),
+            created_at: *config.timestamps().created_at(),
+            updated_at: *config.timestamps().updated_at(),
             version: config.version().value(),
         })
     }
@@ -73,8 +73,8 @@ impl SqliteSchema {
             name: schema.name().to_string(),
             root_prop: schema.root_prop().clone().try_into()?,
             configs,
-            created_at: schema.timestamps().created_at().clone(),
-            updated_at: schema.timestamps().updated_at().clone(),
+            created_at: *schema.timestamps().created_at(),
+            updated_at: *schema.timestamps().updated_at(),
             version: schema.version().value(),
         })
     }
