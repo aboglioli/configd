@@ -45,7 +45,7 @@ impl UpdateConfig {
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::new(cmd.config_id)?;
 
-            let data_hex = serde_json::to_vec(&cmd.data).unwrap();
+            let data_hex = serde_json::to_vec(&cmd.data).map_err(Error::Serde)?;
             let hash = self.hasher.hash(&data_hex);
 
             schema.update_config(&config_id, cmd.data.into(), hash)?;
@@ -55,7 +55,7 @@ impl UpdateConfig {
             self.event_publisher
                 .publish(&schema.events())
                 .await
-                .map_err(Error::CouldNotPublishEvents)?;
+                .map_err(Error::Core)?;
 
             return Ok(UpdateConfigResponse {
                 schema_id: schema_id.to_string(),

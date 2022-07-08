@@ -42,7 +42,7 @@ impl DeleteSchema {
             self.event_publisher
                 .publish(&schema.events())
                 .await
-                .map_err(Error::CouldNotPublishEvents)?;
+                .map_err(Error::Core)?;
 
             return Ok(DeleteSchemaResponse {
                 schema_id: schema_id.to_string(),

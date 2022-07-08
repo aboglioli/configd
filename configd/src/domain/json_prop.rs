@@ -45,8 +45,7 @@ impl TryFrom<JsonValue> for Prop {
             JsonValue::Object(mut map) => {
                 // $schema
                 if let Some(value) = map.remove(SCHEMA_KEY) {
-                    let prop: JsonProp =
-                        serde_json::from_value(value).map_err(Error::CouldNotDeserializeProp)?;
+                    let prop: JsonProp = serde_json::from_value(value).map_err(Error::Serde)?;
 
                     let default_value = prop.default_value.map(Value::from);
                     let allowed_values = prop
@@ -109,8 +108,7 @@ impl TryFrom<Prop> for JsonValue {
                     regex: None,
                 };
 
-                let json_value =
-                    serde_json::to_value(&json_prop).map_err(Error::CouldNotDeserializeProp)?;
+                let json_value = serde_json::to_value(&json_prop).map_err(Error::Serde)?;
 
                 let mut map = Map::new();
                 map.insert(SCHEMA_KEY.to_string(), json_value);
@@ -136,8 +134,7 @@ impl TryFrom<Prop> for JsonValue {
                     regex: None,
                 };
 
-                let json_value =
-                    serde_json::to_value(&json_prop).map_err(Error::CouldNotDeserializeProp)?;
+                let json_value = serde_json::to_value(&json_prop).map_err(Error::Serde)?;
 
                 let mut map = Map::new();
                 map.insert(SCHEMA_KEY.to_string(), json_value);
@@ -163,8 +160,7 @@ impl TryFrom<Prop> for JsonValue {
                     regex: None,
                 };
 
-                let json_value =
-                    serde_json::to_value(&json_prop).map_err(Error::CouldNotDeserializeProp)?;
+                let json_value = serde_json::to_value(&json_prop).map_err(Error::Serde)?;
 
                 let mut map = Map::new();
                 map.insert(SCHEMA_KEY.to_string(), json_value);
@@ -187,8 +183,7 @@ impl TryFrom<Prop> for JsonValue {
                     regex,
                 };
 
-                let json_value =
-                    serde_json::to_value(&json_prop).map_err(Error::CouldNotDeserializeProp)?;
+                let json_value = serde_json::to_value(&json_prop).map_err(Error::Serde)?;
 
                 let mut map = Map::new();
                 map.insert(SCHEMA_KEY.to_string(), json_value);

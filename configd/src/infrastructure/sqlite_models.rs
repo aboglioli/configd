@@ -40,8 +40,8 @@ impl SqliteConfig {
             self.data.into(),
             self.valid,
             self.checksum,
-            Timestamps::new(self.created_at, self.updated_at, None).unwrap(),
-            Version::new(self.version).unwrap(),
+            Timestamps::new(self.created_at, self.updated_at, None).map_err(Error::Core)?,
+            Version::new(self.version).map_err(Error::Core)?,
         )
     }
 }
@@ -66,7 +66,7 @@ impl SqliteSchema {
                 .map(|(id, config)| Ok((id.to_string(), SqliteConfig::from_domain(config)?)))
                 .collect::<Result<HashMap<String, SqliteConfig>, Error>>()?,
         )
-        .unwrap();
+        .map_err(Error::Serde)?;
 
         Ok(SqliteSchema {
             id: schema.id().to_string(),
@@ -80,7 +80,8 @@ impl SqliteSchema {
     }
 
     pub fn to_domain(self) -> Result<Schema, Error> {
-        let configs: HashMap<String, SqliteConfig> = serde_json::from_value(self.configs).unwrap();
+        let configs: HashMap<String, SqliteConfig> =
+            serde_json::from_value(self.configs).map_err(Error::Serde)?;
 
         Schema::new(
             Id::new(self.id)?,
@@ -90,8 +91,8 @@ impl SqliteSchema {
                 .into_iter()
                 .map(|(id, config)| Ok((Id::new(id)?, config.to_domain()?)))
                 .collect::<Result<HashMap<Id, Config>, Error>>()?,
-            Timestamps::new(self.created_at, self.updated_at, None).unwrap(),
-            Version::new(self.version).unwrap(),
+            Timestamps::new(self.created_at, self.updated_at, None).map_err(Error::Core)?,
+            Version::new(self.version).map_err(Error::Core)?,
             None,
         )
     }

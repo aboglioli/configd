@@ -20,11 +20,14 @@ impl Container {
 
         let hasher = Arc::new(Sha256Hasher::new());
 
-        let sqlite_pool = SqlitePool::connect("configd.db").await.unwrap();
-
         let schema_repository: Arc<dyn SchemaRepository + Sync + Send> = match config.storage {
             Storage::InMem => Arc::new(InMemSchemaRepository::new()),
-            Storage::SQLite => Arc::new(SQLiteSchemaRepository::new(sqlite_pool).await?),
+            Storage::SQLite => {
+                let sqlite_pool = SqlitePool::connect("configd.db")
+                    .await
+                    .map_err(Error::Database)?;
+                Arc::new(SQLiteSchemaRepository::new(sqlite_pool).await?)
+            }
         };
 
         Ok(Container {

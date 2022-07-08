@@ -1,4 +1,3 @@
-use core_lib::errors::Error as CoreError;
 use thiserror::Error;
 
 use crate::domain::{Diff, Id, Kind};
@@ -16,18 +15,12 @@ pub enum Error {
     // Props
     #[error("mismatched kinds: expected {expected}, found {found}")]
     MismatchedKinds { expected: Kind, found: Kind },
-    #[error("could not deserialize prop")]
-    CouldNotDeserializeProp(#[source] serde_json::Error),
     #[error("invalid array: must have just one element")]
     InvalidArray,
     #[error("root prop is not an object or array")]
     UnknownRootProp,
 
-    // Entities
-    #[error("could not record event")]
-    CouldNotRecordEvent(#[source] CoreError),
-    #[error("could not publish events")]
-    CouldNotPublishEvents(#[source] CoreError),
+    // Domain & Entities
     #[error("schema not found: {0}")]
     SchemaNotFound(Id),
     #[error("schema already exists: {0}")]
@@ -42,6 +35,14 @@ pub enum Error {
     // Config validation
     #[error("invalid config")]
     InvalidConfig(Diff),
+
+    // External
+    #[error("core lib: {0}")]
+    Serde(#[source] serde_json::Error),
+    #[error("core lib: {0}")]
+    Core(#[source] core_lib::errors::Error),
+    #[error("database error: {0}")]
+    Database(#[source] sqlx::Error),
 }
 
 impl Error {
@@ -50,18 +51,22 @@ impl Error {
             Error::EmptyId => "empty_id",
             Error::EmptyName => "empty_name",
             Error::EmptyInterval => "empty_interval",
-            Error::CouldNotRecordEvent(_) => "could_not_record_event",
-            Error::CouldNotPublishEvents(_) => "could_not_publish_events",
+
             Error::MismatchedKinds { .. } => "mismatched_kinds",
-            Error::CouldNotDeserializeProp(_) => "could_not_deserialize_prop",
             Error::InvalidArray => "invalid_array",
             Error::UnknownRootProp => "unknown_root_prop",
+
             Error::SchemaNotFound(_) => "schema_not_found",
             Error::SchemaAlreadyExists(_) => "schema_already_exists",
             Error::SchemaContainsConfigs(_) => "schema_contains_configs",
             Error::ConfigNotFound(_) => "config_not_found",
             Error::ConfigAlreadyExists(_) => "config_already_exists",
+
             Error::InvalidConfig(_) => "invalid_config",
+
+            Error::Serde(_) => "serde",
+            Error::Core(_) => "core_lib",
+            Error::Database(_) => "database",
         }
     }
 }

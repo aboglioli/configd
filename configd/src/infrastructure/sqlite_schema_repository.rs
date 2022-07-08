@@ -27,7 +27,7 @@ impl SQLiteSchemaRepository {
         )
         .execute(&pool)
         .await
-        .unwrap();
+        .map_err(Error::Database)?;
 
         Ok(SQLiteSchemaRepository { pool })
     }
@@ -41,7 +41,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
                 .bind(id.value())
                 .fetch_optional(&self.pool)
                 .await
-                .unwrap();
+                .map_err(Error::Database)?;
 
         Ok(sqlite_schema.map(SqliteSchema::to_domain).transpose()?)
     }
@@ -97,7 +97,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
             .bind(sqlite_schema.version)
         };
 
-        query.execute(&self.pool).await.unwrap();
+        query.execute(&self.pool).await.map_err(Error::Database)?;
 
         Ok(())
     }
@@ -107,7 +107,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
             .bind(id.value())
             .execute(&self.pool)
             .await
-            .unwrap();
+            .map_err(Error::Database)?;
 
         Ok(())
     }
