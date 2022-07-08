@@ -58,15 +58,15 @@ impl GetConfig {
                 data: config.data().into(),
                 valid: config.is_valid(),
                 checksum: hex::encode(config.checksum()),
-                created_at: config.timestamps().created_at().clone(),
-                updated_at: config.timestamps().updated_at().clone(),
+                created_at: *config.timestamps().created_at(),
+                updated_at: *config.timestamps().updated_at(),
                 version: config.version().value(),
             };
 
             self.event_publisher
                 .publish(&schema.events())
                 .await
-                .map_err(Error::CouldNotPublishEvents)?;
+                .map_err(Error::Core)?;
 
             return Ok(res);
         }

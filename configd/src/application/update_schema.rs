@@ -46,7 +46,7 @@ impl UpdateSchema {
             self.event_publisher
                 .publish(&schema.events())
                 .await
-                .map_err(Error::CouldNotPublishEvents)?;
+                .map_err(Error::Core)?;
 
             return Ok(UpdateSchemaResponse {
                 id: schema.id().to_string(),

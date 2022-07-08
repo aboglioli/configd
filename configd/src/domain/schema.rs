@@ -76,7 +76,7 @@ impl Schema {
                 name: schema.name().to_string(),
                 root_prop: schema.root_prop().clone().try_into()?,
             })
-            .map_err(Error::CouldNotRecordEvent)?;
+            .map_err(Error::Core)?;
 
         Ok(schema)
     }
@@ -124,7 +124,7 @@ impl Schema {
                 id: self.id.to_string(),
                 root_prop: self.root_prop.clone().try_into()?,
             })
-            .map_err(Error::CouldNotRecordEvent)?;
+            .map_err(Error::Core)?;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
@@ -139,7 +139,7 @@ impl Schema {
                     id: config.id().to_string(),
                     schema_id: self.id.to_string(),
                 })
-                .map_err(Error::CouldNotRecordEvent)?;
+                .map_err(Error::Core)?;
 
             Ok(config)
         } else {
@@ -172,7 +172,7 @@ impl Schema {
                 data: config.data().into(),
                 valid: config.is_valid(),
             })
-            .map_err(Error::CouldNotRecordEvent)?;
+            .map_err(Error::Core)?;
 
         self.configs.insert(config.id().clone(), config);
 
@@ -198,7 +198,7 @@ impl Schema {
                     data: config.data().into(),
                     valid: config.is_valid(),
                 })
-                .map_err(Error::CouldNotRecordEvent)?;
+                .map_err(Error::Core)?;
 
             self.timestamps = self.timestamps.update();
             self.version = self.version.incr();
@@ -221,7 +221,7 @@ impl Schema {
                 id: id.to_string(),
                 schema_id: self.id.to_string(),
             })
-            .map_err(Error::CouldNotRecordEvent)?;
+            .map_err(Error::Core)?;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
@@ -238,7 +238,7 @@ impl Schema {
             .record(SchemaDeleted {
                 id: self.id.to_string(),
             })
-            .map_err(Error::CouldNotRecordEvent)?;
+            .map_err(Error::Core)?;
 
         self.timestamps = self.timestamps.delete();
 

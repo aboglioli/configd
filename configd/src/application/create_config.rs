@@ -46,7 +46,7 @@ impl CreateConfig {
 
             // It's safe because data is a serde_json::Value, an already validated JSON
             // representation.
-            let data_hex = serde_json::to_vec(&cmd.data).unwrap();
+            let data_hex = serde_json::to_vec(&cmd.data).map_err(Error::Serde)?;
             let hash = self.hasher.hash(&data_hex);
 
             schema.add_config(config_id.clone(), cmd.name, cmd.data.into(), hash)?;
@@ -56,7 +56,7 @@ impl CreateConfig {
             self.event_publisher
                 .publish(&schema.events())
                 .await
-                .map_err(Error::CouldNotPublishEvents)?;
+                .map_err(Error::Core)?;
 
             return Ok(CreateConfigResponse {
                 schema_id: schema_id.to_string(),

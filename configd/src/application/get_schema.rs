@@ -58,13 +58,13 @@ impl GetSchema {
                         name: config.name().to_string(),
                         valid: config.is_valid(),
                         checksum: hex::encode(config.checksum()),
-                        created_at: config.timestamps().created_at().clone(),
-                        updated_at: config.timestamps().updated_at().clone(),
+                        created_at: *config.timestamps().created_at(),
+                        updated_at: *config.timestamps().updated_at(),
                         version: config.version().value(),
                     })
                     .collect(),
-                created_at: schema.timestamps().created_at().clone(),
-                updated_at: schema.timestamps().updated_at().clone(),
+                created_at: *schema.timestamps().created_at(),
+                updated_at: *schema.timestamps().updated_at(),
                 version: schema.version().value(),
             });
         }
