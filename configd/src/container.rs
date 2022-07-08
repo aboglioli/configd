@@ -22,8 +22,8 @@ impl Container {
 
         let schema_repository: Arc<dyn SchemaRepository + Sync + Send> = match config.storage {
             Storage::InMem => Arc::new(InMemSchemaRepository::new()),
-            Storage::SQLite => {
-                let sqlite_pool = SqlitePool::connect("configd.db")
+            Storage::SQLite { ref filename } => {
+                let sqlite_pool = SqlitePool::connect(filename)
                     .await
                     .map_err(Error::Database)?;
                 Arc::new(SQLiteSchemaRepository::new(sqlite_pool).await?)
