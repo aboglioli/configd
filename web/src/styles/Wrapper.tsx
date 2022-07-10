@@ -1,11 +1,12 @@
 import styled, { css } from 'styled-components';
 
 import { Box } from 'styles/Box';
+import { Alignment } from 'styles/common';
 
 export interface WrapperProps {
-  justifyContent?: string;
-  alignItems?: string;
-  highlightOnHover?: boolean;
+  alignment?: Alignment;
+  verticalAlignment?: Alignment;
+  vertical?: boolean;
 }
 
 export const Wrapper = styled(Box)<WrapperProps>`
@@ -13,28 +14,22 @@ export const Wrapper = styled(Box)<WrapperProps>`
   flex-wrap: wrap;
   width: 100%;
   ${(props) =>
-    props.justifyContent
+    props.alignment
       ? css`
-          justify-content: ${props.justifyContent};
+          justify-content: ${props.alignment};
         `
       : ''}
   ${(props) =>
-    props.alignItems
+    props.verticalAlignment
       ? css`
-          align-items: ${props.alignItems};
+          align-items: ${props.verticalAlignment};
         `
       : ''}
 
-  ${(props) =>
-    props.highlightOnHover
+      ${(props) =>
+    props.vertical
       ? css`
-          &:hover {
-            border: 1px solid rgba(0, 0, 0, 0.5);
-          }
+          flex-direction: column;
         `
       : ''}
-`;
-
-export const VerticalWrapper = styled(Wrapper)`
-  flex-direction: column;
 `;

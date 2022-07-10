@@ -1,27 +1,18 @@
-import { Button } from 'styles/Button';
-import { Card, CardTitle, CardSubtitle, CardContent, CardFooter } from 'styles/Card';
+import { Button } from 'styles/Form';
 import { Wrapper } from 'styles/Wrapper';
 import { Link } from 'styles/Link';
+import { Title, Subtitle } from 'styles/Title';
+import { Size } from 'styles/common';
 
 const Playground = () => {
   return (
-    <Wrapper>
-      <Card>
-        <CardTitle>
-          <h1>Title</h1>
-        </CardTitle>
-        <CardSubtitle>
-          # <Link href="#">subtitle</Link>
-        </CardSubtitle>
-        <CardContent>Content</CardContent>
-        <CardFooter>
-          Footer
-          <div>
-            <Button>Hello</Button>
-            <Button primary>Hello</Button>
-          </div>
-        </CardFooter>
-      </Card>
+    <Wrapper vertical bordered padding={Size.Medium}>
+      <Wrapper vertical bordered padding={Size.Small}>
+        <Title>Title</Title>
+        <Subtitle>Subtitle</Subtitle>
+      </Wrapper>
+      <Link>Link</Link>
+      <Button>Button</Button>
     </Wrapper>
   );
 };

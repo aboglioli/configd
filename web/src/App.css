@@ -1,11 +1,20 @@
 :root {
-  --color1: #AA3939;
-  --color2: #801515;
-  --color3: #D46A6A;
-  --color4: #FFAAAA;
+  --darkest-color: #444;
+  --darker-color: #555;
+  --dark-color: #666;
+  --primary-color: #999;
+  --light-color: #bebebe;
+  --lighter-color: #ddd;
+  --lightest-color: #eee;
 
-  --black1: #555;
-  --black2: #777;
-  --black3: #aaa;
-  --black4: #ddd;
+  /* Used colors:
+   * #444: Button color (primary), Title color
+   * #555: Subtitle color,
+   * #666: Button color,
+   * #777: Button border hover, Input border hover, Wrapper border hover,
+   * #bebebe: Button border,
+   * #ccc: Input border, HeaderSubtitle border
+   * #ddd: Button background (primary), Header border, Box border,
+   * #eee: Button background, Header background, ListItem border,
+   */
 }

@@ -1,16 +1,6 @@
 import styled, { css } from 'styled-components';
 
-export enum Size {
-  Small = 'small',
-  Medium = 'medium',
-  Large = 'large',
-}
-
-const sizes = {
-  [Size.Small]: '0.5rem',
-  [Size.Medium]: '1rem',
-  [Size.Large]: '1.5rem',
-};
+import { Size, sizes } from 'styles/common';
 
 export interface BoxProps {
   bordered?: boolean;
@@ -34,7 +24,7 @@ export const Box = styled.div<BoxProps>`
   ${(props) =>
     props.bordered
       ? css`
-          border: 1px solid #ddd;
+          border: 1px solid var(--lighter-color);
         `
       : ''}
 `;

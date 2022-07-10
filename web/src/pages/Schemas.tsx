@@ -1,18 +1,11 @@
 import { FC, useEffect } from 'react';
 
 import { useSchemas } from 'hooks/schema';
-import { VerticalWrapper, Wrapper } from 'styles/Wrapper';
-import { Size } from 'styles/Box';
+import { Wrapper } from 'styles/Wrapper';
+import { Size } from 'styles/common';
 import { Title } from 'styles/Title';
-import { Input } from 'styles/Form';
-import { Button } from 'styles/Button';
-import {
-  List,
-  ListItem,
-  ListItemImage,
-  ListItemContent,
-  ListItemButtons,
-} from 'styles/List';
+import { Input, Button } from 'styles/Form';
+import { ListItem, ListItemImage, ListItemContent, ListItemButtons } from 'styles/List';
 
 export interface SchemasProps {
   setTitle: (title: string) => void;
@@ -34,7 +27,7 @@ const Schemas: FC<SchemasProps> = ({ setTitle }) => {
   };
 
   return (
-    <VerticalWrapper gap={Size.Medium}>
+    <Wrapper vertical gap={Size.Medium}>
       <Wrapper bordered padding={Size.Medium}>
         <Title>Schemas</Title>
       </Wrapper>
@@ -44,13 +37,16 @@ const Schemas: FC<SchemasProps> = ({ setTitle }) => {
         <Button primary>New schema</Button>
       </Wrapper>
 
-      <List bordered padding={Size.Medium} gap={Size.Small}>
+      <Wrapper bordered padding={Size.Medium} gap={Size.Small}>
         {schemas.map((schema) => (
-          <ListItem key={schema.id} bordered padding={Size.Small} highlightOnHover>
+          <ListItem key={schema.id} bordered padding={Size.Small}>
             <ListItemImage src="schema.png" />
             <ListItemContent>
               <h3>{schema.name}</h3>
-              <small>{schema.configs.length} configurations.</small>
+              <small>
+                {schema.configs.length} configurations:{' '}
+                {schema.configs.map((config) => config.id).join(', ')}
+              </small>
             </ListItemContent>
             <ListItemButtons>
               <Button onClick={viewSchema}>View</Button>
@@ -60,8 +56,8 @@ const Schemas: FC<SchemasProps> = ({ setTitle }) => {
             </ListItemButtons>
           </ListItem>
         ))}
-      </List>
-    </VerticalWrapper>
+      </Wrapper>
+    </Wrapper>
   );
 };
 

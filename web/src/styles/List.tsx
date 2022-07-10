@@ -1,14 +1,12 @@
 import styled, { css } from 'styled-components';
 
-import { Wrapper, VerticalWrapper } from 'styles/Wrapper';
-
-export const List = VerticalWrapper;
+import { Wrapper } from 'styles/Wrapper';
 
 export const ListItem = styled(Wrapper)`
-  border: 1px solid #eee;
+  align-items: center;
+  border: 1px solid var(--lightest-color);
   display: flex;
   gap: 0.5rem;
-  align-items: center;
   ${(props) =>
     props.onClick
       ? css`
