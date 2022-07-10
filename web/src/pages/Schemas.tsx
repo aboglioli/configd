@@ -1,108 +1,67 @@
 import { FC, useEffect } from 'react';
 
-import { SchemaCard } from 'components/SchemaCard';
-import { SchemaConfigCard } from 'components/SchemaConfigCard';
-import { Schema } from 'domain/schema';
-import { PropKind } from 'domain/prop';
-
-import './Schemas.css';
-
-const schemas: Schema[] = [
-  {
-    id: 'schema-1',
-    name: 'Schema 1',
-    schema: {
-      env: {
-        $schema: {
-          kind: PropKind.String,
-          required: true,
-          allowed_values: ['dev', 'stg', 'prod'],
-        },
-      },
-    },
-    configs: [
-      {
-        id: 'dev',
-        name: 'Dev',
-        valid: true,
-        checksum: 'abcd1234',
-        created_at: new Date(),
-        updated_at: new Date(),
-        version: 2,
-      },
-      {
-        id: 'stg',
-        name: 'Staging',
-        valid: true,
-        checksum: 'qwerty1234',
-        created_at: new Date(),
-        updated_at: new Date(),
-        version: 1,
-      },
-    ],
-    created_at: new Date(),
-    updated_at: new Date(),
-    version: 1,
-  },
-  {
-    id: 'schema-2',
-    name: 'Schema 2',
-    schema: {
-      env: {
-        $schema: {
-          kind: PropKind.String,
-          required: true,
-          allowed_values: ['dev', 'stg', 'prod'],
-        },
-      },
-    },
-    configs: [
-      {
-        id: 'dev',
-        name: 'Dev',
-        valid: true,
-        checksum: 'abcd1234',
-        created_at: new Date(),
-        updated_at: new Date(),
-        version: 2,
-      },
-      {
-        id: 'stg',
-        name: 'Staging',
-        valid: true,
-        checksum: 'qwerty1234',
-        created_at: new Date(),
-        updated_at: new Date(),
-        version: 1,
-      },
-    ],
-    created_at: new Date(),
-    updated_at: new Date(),
-    version: 1,
-  },
-];
+import { useSchemas } from 'hooks/schema';
+import { VerticalWrapper, Wrapper } from 'styles/Wrapper';
+import { Size } from 'styles/Box';
+import { Title } from 'styles/Title';
+import { Input } from 'styles/Form';
+import { Button } from 'styles/Button';
+import {
+  List,
+  ListItem,
+  ListItemImage,
+  ListItemContent,
+  ListItemButtons,
+} from 'styles/List';
 
 export interface SchemasProps {
   setTitle: (title: string) => void;
 }
 
 const Schemas: FC<SchemasProps> = ({ setTitle }) => {
+  const schemas = useSchemas();
+
   useEffect(() => {
     setTitle('Home');
   }, []);
 
+  const viewSchema = () => {
+    console.log('View schema');
+  };
+
+  const createConfig = () => {
+    console.log('Create config');
+  };
+
   return (
-    <div className="schemas">
-      <div className="schemas__content">
+    <VerticalWrapper gap={Size.Medium}>
+      <Wrapper bordered padding={Size.Medium}>
+        <Title>Schemas</Title>
+      </Wrapper>
+
+      <Wrapper bordered padding={Size.Medium} gap={Size.Small}>
+        <Input placeholder="Search schemas..." />
+        <Button primary>New schema</Button>
+      </Wrapper>
+
+      <List bordered padding={Size.Medium} gap={Size.Small}>
         {schemas.map((schema) => (
-          <SchemaCard key={schema.id} schema={schema}>
-            {schema.configs.map((config) => (
-              <SchemaConfigCard key={config.id} config={config} />
-            ))}
-          </SchemaCard>
+          <ListItem key={schema.id} bordered padding={Size.Small} highlightOnHover>
+            <ListItemImage src="schema.png" />
+            <ListItemContent>
+              <h3>{schema.name}</h3>
+              <small>{schema.configs.length} configurations.</small>
+            </ListItemContent>
+            <ListItemButtons>
+              <Button onClick={viewSchema}>View</Button>
+              <Button primary onClick={createConfig}>
+                New config
+              </Button>
+            </ListItemButtons>
+          </ListItem>
         ))}
-      </div>
-    </div>
+      </List>
+    </VerticalWrapper>
   );
 };
 

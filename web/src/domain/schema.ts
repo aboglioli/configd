@@ -1,5 +1,9 @@
 import { Prop } from 'domain/prop';
 
+export interface SchemaService {
+  getSchemas(): Promise<Schema[]>;
+}
+
 export type RootProp = { $schema: Prop } | RootProp[] | { [key: string]: RootProp };
 
 export interface SchemaConfig {
