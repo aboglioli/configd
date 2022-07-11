@@ -1,8 +1,12 @@
 import { FC, useEffect } from 'react';
+// import { FaBeer } from 'react-icons/fa';
+import { BsDiagram3, BsSearch } from 'react-icons/bs';
+import { GrDocumentConfig } from 'react-icons/gr';
+import { BiEdit } from 'react-icons/bi';
 
-import { useSchemas } from 'hooks/schema';
+import { useSchemas } from 'hooks/schemas';
 import { Wrapper } from 'styles/Wrapper';
-import { Size } from 'styles/common';
+import { Size, Alignment } from 'styles/common';
 import { Title } from 'styles/Title';
 import { Input, Button } from 'styles/Form';
 import { ListItem, ListItemImage, ListItemContent, ListItemButtons } from 'styles/List';
@@ -12,11 +16,18 @@ export interface SchemasProps {
 }
 
 const Schemas: FC<SchemasProps> = ({ setTitle }) => {
-  const schemas = useSchemas();
-
   useEffect(() => {
     setTitle('Home');
   }, []);
+
+  const { loading, data: schemasPage } = useSchemas();
+  console.log(loading, schemasPage);
+
+  if (loading || !schemasPage) {
+    return <b>Loading...</b>;
+  }
+
+  const schemas = schemasPage.data;
 
   const viewSchema = () => {
     console.log('View schema');
@@ -32,9 +43,18 @@ const Schemas: FC<SchemasProps> = ({ setTitle }) => {
         <Title>Schemas</Title>
       </Wrapper>
 
-      <Wrapper bordered padding={Size.Medium} gap={Size.Small}>
+      <Wrapper
+        bordered
+        padding={Size.Medium}
+        gap={Size.Small}
+        verticalAlignment={Alignment.Center}
+      >
+        <BsSearch />
         <Input placeholder="Search schemas..." />
-        <Button primary>New schema</Button>
+        <Button primary>
+          <BsDiagram3 />
+          Create schema
+        </Button>
       </Wrapper>
 
       <Wrapper bordered padding={Size.Medium} gap={Size.Small}>
@@ -49,9 +69,13 @@ const Schemas: FC<SchemasProps> = ({ setTitle }) => {
               </small>
             </ListItemContent>
             <ListItemButtons>
-              <Button onClick={viewSchema}>View</Button>
+              <Button onClick={viewSchema}>
+                <BiEdit />
+                View
+              </Button>
               <Button primary onClick={createConfig}>
-                New config
+                <GrDocumentConfig />
+                Create config
               </Button>
             </ListItemButtons>
           </ListItem>

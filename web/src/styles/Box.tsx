@@ -1,6 +1,12 @@
 import styled, { css } from 'styled-components';
 
-import { Size, sizes } from 'styles/common';
+import { Size } from 'styles/common';
+
+const sizes = {
+  [Size.Small]: '0.5rem',
+  [Size.Medium]: '1rem',
+  [Size.Large]: '1.5rem',
+};
 
 export interface BoxProps {
   bordered?: boolean;

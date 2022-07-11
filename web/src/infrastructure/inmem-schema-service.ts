@@ -1,5 +1,6 @@
 import { Schema, SchemaService } from 'domain/schema';
 import { PropKind } from 'domain/prop';
+import { Page } from 'domain/page';
 
 const schemas: Schema[] = [
   {
@@ -77,7 +78,12 @@ const schemas: Schema[] = [
 ];
 
 export class InMemSchemaService implements SchemaService {
-  async getSchemas(): Promise<Schema[]> {
-    return schemas;
+  async getSchemas(): Promise<Page<Schema>> {
+    return {
+      offset: 0,
+      limit: schemas.length,
+      total: schemas.length,
+      data: schemas,
+    };
   }
 }

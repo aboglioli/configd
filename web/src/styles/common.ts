@@ -9,9 +9,3 @@ export enum Size {
   Medium = 'medium',
   Large = 'large',
 }
-
-export const sizes = {
-  [Size.Small]: '0.5rem',
-  [Size.Medium]: '1rem',
-  [Size.Large]: '1.5rem',
-};
