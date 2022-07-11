@@ -10,4 +10,9 @@ export class HttpSchemaService implements SchemaService {
     const res = await axios.get(`${this.baseUrl}/schemas`);
     return res.data;
   }
+
+  async getSchema(schemaId: string): Promise<Schema> {
+    const res = await axios.get(`${this.baseUrl}/schemas/${schemaId}`);
+    return res.data;
+  }
 }

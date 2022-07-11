@@ -3,6 +3,7 @@ import { Page } from 'domain/page';
 
 export interface SchemaService {
   getSchemas(): Promise<Page<Schema>>;
+  getSchema(schemaId: string): Promise<Schema>;
 }
 
 export type RootProp = { $schema: Prop } | RootProp[] | { [key: string]: RootProp };

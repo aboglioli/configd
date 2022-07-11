@@ -6,9 +6,9 @@ export interface Response<T> {
   data?: T;
 }
 
-export type Request<T> = () => Promise<T>;
+export type Request<T> = (...deps: unknown[]) => Promise<T>;
 
-export const useRequest = <T>(request: Request<T>): Response<T> => {
+export const useRequest = <T>(request: Request<T>, deps?: unknown[]): Response<T> => {
   const [response, setResponse] = useState({
     loading: true,
   });
@@ -25,7 +25,7 @@ export const useRequest = <T>(request: Request<T>): Response<T> => {
         setResponse((response) => ({ ...response, loading: false, error: err }));
       }
     })();
-  }, []);
+  }, deps || []);
 
   return response;
 };

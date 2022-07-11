@@ -9,26 +9,26 @@ const sizes = {
 };
 
 export interface BoxProps {
-  bordered?: boolean;
-  gap?: Size;
-  padding?: Size;
+  $bordered?: boolean;
+  $gap?: Size;
+  $padding?: Size;
 }
 
 export const Box = styled.div<BoxProps>`
   ${(props) =>
-    props.padding
+    props.$padding
       ? css`
-          padding: ${sizes[props.padding]};
+          padding: ${sizes[props.$padding]};
         `
       : ''}
   ${(props) =>
-    props.gap
+    props.$gap
       ? css`
-          gap: ${sizes[props.gap]};
+          gap: ${sizes[props.$gap]};
         `
       : ''}
   ${(props) =>
-    props.bordered
+    props.$bordered
       ? css`
           border: 1px solid var(--lighter-color);
         `

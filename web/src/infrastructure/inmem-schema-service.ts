@@ -86,4 +86,14 @@ export class InMemSchemaService implements SchemaService {
       data: schemas,
     };
   }
+
+  async getSchema(schemaId: string): Promise<Schema> {
+    const schema = schemas.find((schema) => schema.id === schemaId);
+
+    if (!schema) {
+      throw new Error('schema not found');
+    }
+
+    return schema;
+  }
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
 import Schemas from 'pages/Schemas';
+import Schema from 'pages/Schema';
 import Playground from 'pages/Playground';
 import { Wrapper } from 'styles/Wrapper';
 import { Size } from 'styles/common';
@@ -19,9 +20,10 @@ const App = () => {
         <HeaderTitle>Configd</HeaderTitle>
         {title && <HeaderSubtitle>{title}</HeaderSubtitle>}
       </Header>
-      <Wrapper padding={Size.Large}>
+      <Wrapper $padding={Size.Large}>
         <Routes>
           <Route path="/" element={<Schemas setTitle={setTitle} />} />
+          <Route path="/schemas/:schemaId" element={<Schema setTitle={setTitle} />} />
           <Route path="/playground" element={<Playground />} />
         </Routes>
       </Wrapper>
