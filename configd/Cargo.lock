@@ -246,6 +246,7 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tokio",
+ "tower-http",
 ]
 
 [[package]]
