@@ -31,6 +31,8 @@ pub enum Error {
     ConfigNotFound(Id),
     #[error("config already exists: {0}")]
     ConfigAlreadyExists(Id),
+    #[error("page out of range")]
+    PageOutOfRange,
 
     // Config validation
     #[error("invalid config")]
@@ -61,6 +63,7 @@ impl Error {
             Error::SchemaContainsConfigs(_) => "schema_contains_configs",
             Error::ConfigNotFound(_) => "config_not_found",
             Error::ConfigAlreadyExists(_) => "config_already_exists",
+            Error::PageOutOfRange => "page_out_of_range",
 
             Error::InvalidConfig(_) => "invalid_config",
 

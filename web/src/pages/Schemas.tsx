@@ -45,7 +45,7 @@ const Schemas: FC<SchemasProps> = ({ setTitle }) => {
               <h3>{schema.name}</h3>
               <small>
                 {schema.configs.length} configurations:{' '}
-                {schema.configs.map((config) => config.id).join(', ')}
+                <b>{schema.configs.map((config) => config.id).join(', ')}</b>.
               </small>
             </ListItemContent>
             <ListItemButtons>

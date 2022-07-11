@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Extension, Json, Path},
+    extract::{Extension, Json, Path, Query},
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -10,8 +10,9 @@ use crate::{
     application::{
         CreateConfig, CreateConfigCommand, CreateSchema, CreateSchemaCommand, DeleteConfig,
         DeleteConfigCommand, DeleteSchema, DeleteSchemaCommand, GetConfig, GetConfigCommand,
-        GetSchema, GetSchemaCommand, UpdateConfig, UpdateConfigCommand, UpdateSchema,
-        UpdateSchemaCommand, ValidateConfig, ValidateConfigCommand,
+        GetSchema, GetSchemaCommand, ListSchemas, ListSchemasCommand, UpdateConfig,
+        UpdateConfigCommand, UpdateSchema, UpdateSchemaCommand, ValidateConfig,
+        ValidateConfigCommand,
     },
     container::Container,
     domain::{Error, Reason},
@@ -62,6 +63,17 @@ pub async fn health() -> &'static str {
 }
 
 // Schema
+pub async fn list_schemas(
+    Query(cmd): Query<ListSchemasCommand>,
+    Extension(container): Extension<Arc<Container>>,
+) -> Result<impl IntoResponse, Error> {
+    let serv = ListSchemas::new(container.schema_repository.clone());
+
+    let res = serv.exec(cmd).await?;
+
+    Ok((StatusCode::OK, Json(res)))
+}
+
 pub async fn get_schema_by_id(
     Path(schema_id): Path<String>,
     Extension(container): Extension<Arc<Container>>,

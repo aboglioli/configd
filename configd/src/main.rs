@@ -21,7 +21,10 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(handlers::health))
-        .route("/schemas", post(handlers::create_schema))
+        .route(
+            "/schemas",
+            get(handlers::list_schemas).post(handlers::create_schema),
+        )
         .route(
             "/schemas/:schema_id",
             get(handlers::get_schema_by_id)

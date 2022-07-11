@@ -6,12 +6,13 @@ use core_lib::{
 use std::collections::HashMap;
 
 use crate::domain::{
-    Config, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id, Prop,
+    Config, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id, Page, Prop,
     SchemaCreated, SchemaDeleted, SchemaRootPropChanged, Value,
 };
 
 #[async_trait]
 pub trait SchemaRepository {
+    async fn find(&self, offset: Option<u64>, limit: Option<u64>) -> Result<Page<Schema>, Error>;
     async fn find_by_id(&self, id: &Id) -> Result<Option<Schema>, Error>;
     async fn exists(&self, id: &Id) -> Result<bool, Error>;
     async fn save(&self, schema: &mut Schema) -> Result<(), Error>;
