@@ -1,9 +1,0 @@
-.schemas {
-}
-
-.schemas__content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 1.4rem;
-}

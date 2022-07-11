@@ -1,40 +1,20 @@
 :root {
-  --bg-light-color: #fff;
-  --bg-gray-color: #efefef;
-  --bg-dark-gray-color: #cdcdcd;
-  --header-bg-color: #bb4646;
-  --header-fg-color: #ffacac;
-}
+  --darkest-color: #444;
+  --darker-color: #555;
+  --dark-color: #666;
+  --primary-color: #999;
+  --light-color: #bebebe;
+  --lighter-color: #ddd;
+  --lightest-color: #eee;
 
-a {
-  color: #d46a6a;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-button {
-  background-color: #efefef;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  color: #464646;
-  cursor: pointer;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-}
-
-button.primary {
-  background-color: #d46a6a;
-  color: #fff;
-}
-
-button:hover {
-  border: 1px solid rgba(0, 0, 0, 1);
-}
-
-.main-container {
-  background-color: var(--bg-gray-color);
-  border-bottom: 1px solid #aaa;
+  /* Used colors:
+   * #444: Button color (primary), Title color
+   * #555: Subtitle color,
+   * #666: Button color,
+   * #777: Button border hover, Input border hover, Wrapper border hover,
+   * #bebebe: Button border,
+   * #ccc: Input border, HeaderSubtitle border
+   * #ddd: Button background (primary), Header border, Box border,
+   * #eee: Button background, Header background, ListItem border,
+   */
 }

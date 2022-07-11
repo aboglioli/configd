@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::SqlitePool;
 
 use crate::{
-    domain::{Error, Id, Schema, SchemaRepository},
+    domain::{Error, Id, Page, Schema, SchemaRepository},
     infrastructure::SqliteSchema,
 };
 
@@ -35,6 +35,42 @@ impl SQLiteSchemaRepository {
 
 #[async_trait]
 impl SchemaRepository for SQLiteSchemaRepository {
+    async fn find(&self, offset: Option<u64>, limit: Option<u64>) -> Result<Page<Schema>, Error> {
+        let offset = offset.unwrap_or(0);
+        let mut limit = limit.unwrap_or(10);
+        if limit > 25 {
+            limit = 25;
+        }
+
+        let sqlite_schemas: Vec<SqliteSchema> = sqlx::query_as(
+            "
+                SELECT *
+                FROM schemas
+                LIMIT $1 OFFSET $2
+           ",
+        )
+        .bind(limit as u32)
+        .bind(offset as u32)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(Error::Database)?;
+
+        let count: u32 = sqlx::query_scalar("SELECT COUNT(*) FROM schemas")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(Error::Database)?;
+
+        Page::new(
+            offset,
+            limit,
+            count as u64,
+            sqlite_schemas
+                .into_iter()
+                .map(SqliteSchema::to_domain)
+                .collect::<Result<Vec<Schema>, Error>>()?,
+        )
+    }
+
     async fn find_by_id(&self, id: &Id) -> Result<Option<Schema>, Error> {
         let sqlite_schema: Option<SqliteSchema> =
             sqlx::query_as("SELECT * FROM schemas WHERE id = $1")

@@ -6,10 +6,12 @@ mod handlers;
 mod infrastructure;
 
 use axum::{
+    http::Method,
     routing::{get, post},
     Extension, Router, Server,
 };
 use std::sync::Arc;
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::{config::Config, container::Container};
 
@@ -19,9 +21,16 @@ async fn main() {
 
     let container = Arc::new(Container::build(&config).await.unwrap());
 
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_origin(Any);
+
     let app = Router::new()
         .route("/health", get(handlers::health))
-        .route("/schemas", post(handlers::create_schema))
+        .route(
+            "/schemas",
+            get(handlers::list_schemas).post(handlers::create_schema),
+        )
         .route(
             "/schemas/:schema_id",
             get(handlers::get_schema_by_id)
@@ -39,7 +48,8 @@ async fn main() {
             "/schemas/:schema_id/validate",
             post(handlers::validate_config),
         )
-        .layer(Extension(container));
+        .layer(Extension(container))
+        .layer(cors);
 
     let addr = format!("{}:{}", config.host, config.port);
     println!("Listening on {}", addr);

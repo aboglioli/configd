@@ -1,86 +1,15 @@
 import { FC, useEffect } from 'react';
+// import { FaBeer } from 'react-icons/fa';
+import { BsDiagram3, BsSearch } from 'react-icons/bs';
+import { GrDocumentConfig } from 'react-icons/gr';
+import { BiEdit } from 'react-icons/bi';
 
-import { SchemaCard } from 'components/SchemaCard';
-import { SchemaConfigCard } from 'components/SchemaConfigCard';
-import { Schema } from 'domain/schema';
-import { PropKind } from 'domain/prop';
-
-import './Schemas.css';
-
-const schemas: Schema[] = [
-  {
-    id: 'schema-1',
-    name: 'Schema 1',
-    schema: {
-      env: {
-        $schema: {
-          kind: PropKind.String,
-          required: true,
-          allowed_values: ['dev', 'stg', 'prod'],
-        },
-      },
-    },
-    configs: [
-      {
-        id: 'dev',
-        name: 'Dev',
-        valid: true,
-        checksum: 'abcd1234',
-        created_at: new Date(),
-        updated_at: new Date(),
-        version: 2,
-      },
-      {
-        id: 'stg',
-        name: 'Staging',
-        valid: true,
-        checksum: 'qwerty1234',
-        created_at: new Date(),
-        updated_at: new Date(),
-        version: 1,
-      },
-    ],
-    created_at: new Date(),
-    updated_at: new Date(),
-    version: 1,
-  },
-  {
-    id: 'schema-2',
-    name: 'Schema 2',
-    schema: {
-      env: {
-        $schema: {
-          kind: PropKind.String,
-          required: true,
-          allowed_values: ['dev', 'stg', 'prod'],
-        },
-      },
-    },
-    configs: [
-      {
-        id: 'dev',
-        name: 'Dev',
-        valid: true,
-        checksum: 'abcd1234',
-        created_at: new Date(),
-        updated_at: new Date(),
-        version: 2,
-      },
-      {
-        id: 'stg',
-        name: 'Staging',
-        valid: true,
-        checksum: 'qwerty1234',
-        created_at: new Date(),
-        updated_at: new Date(),
-        version: 1,
-      },
-    ],
-    created_at: new Date(),
-    updated_at: new Date(),
-    version: 1,
-  },
-];
+import { useSchemas } from 'hooks/schemas';
+import { Wrapper } from 'styles/Wrapper';
+import { Size, Alignment } from 'styles/common';
+import { Title } from 'styles/Title';
+import { Input, Button } from 'styles/Form';
+import { ListItem, ListItemImage, ListItemContent, ListItemButtons } from 'styles/List';
 
 export interface SchemasProps {
   setTitle: (title: string) => void;
@@ -91,18 +20,68 @@ const Schemas: FC<SchemasProps> = ({ setTitle }) => {
     setTitle('Home');
   }, []);
 
+  const { loading, data: schemasPage } = useSchemas();
+  console.log(loading, schemasPage);
+
+  if (loading || !schemasPage) {
+    return <b>Loading...</b>;
+  }
+
+  const schemas = schemasPage.data;
+
+  const viewSchema = () => {
+    console.log('View schema');
+  };
+
+  const createConfig = () => {
+    console.log('Create config');
+  };
+
   return (
-    <div className="schemas">
-      <div className="schemas__content">
+    <Wrapper vertical gap={Size.Medium}>
+      <Wrapper bordered padding={Size.Medium}>
+        <Title>Schemas</Title>
+      </Wrapper>
+
+      <Wrapper
+        bordered
+        padding={Size.Medium}
+        gap={Size.Small}
+        verticalAlignment={Alignment.Center}
+      >
+        <BsSearch />
+        <Input placeholder="Search schemas..." />
+        <Button primary>
+          <BsDiagram3 />
+          Create schema
+        </Button>
+      </Wrapper>
+
+      <Wrapper bordered padding={Size.Medium} gap={Size.Small}>
         {schemas.map((schema) => (
-          <SchemaCard key={schema.id} schema={schema}>
-            {schema.configs.map((config) => (
-              <SchemaConfigCard key={config.id} config={config} />
-            ))}
-          </SchemaCard>
+          <ListItem key={schema.id} bordered padding={Size.Small}>
+            <ListItemImage src="schema.png" />
+            <ListItemContent>
+              <h3>{schema.name}</h3>
+              <small>
+                {schema.configs.length} configurations:{' '}
+                <b>{schema.configs.map((config) => config.id).join(', ')}</b>.
+              </small>
+            </ListItemContent>
+            <ListItemButtons>
+              <Button onClick={viewSchema}>
+                <BiEdit />
+                View
+              </Button>
+              <Button primary onClick={createConfig}>
+                <GrDocumentConfig />
+                Create config
+              </Button>
+            </ListItemButtons>
+          </ListItem>
         ))}
-      </div>
-    </div>
+      </Wrapper>
+    </Wrapper>
   );
 };
 
