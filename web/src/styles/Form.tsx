@@ -37,6 +37,12 @@ const button = css<ButtonProps>`
   &:hover {
     border: 1px solid var(--dark-color);
   }
+
+  &:disabled {
+    background-color: var(--lighter-color);
+    border: 1px solid var(--lighter-color);
+    color: var(--light-color);
+  }
 `;
 
 export const Button = styled.button.attrs<ButtonProps>((props) => ({
@@ -56,7 +62,7 @@ export interface InputProps {
   $size?: Size;
 }
 
-export const Input = styled.input<InputProps>`
+const input = css<InputProps>`
   border: 1px solid var(--light-color);
   flex: 1;
   font-family: inherit;
@@ -83,4 +89,15 @@ export const Input = styled.input<InputProps>`
   &:hover {
     border: 1px solid var(--dark-color);
   }
+`;
+
+export const Input = styled.input<InputProps>`
+  ${input}
+`;
+
+export const TextArea = styled.textarea<InputProps>`
+  ${input}
+  min-height: 500px;
+  resize: none;
+  background-color: #f2f2f2;
 `;
