@@ -12,7 +12,8 @@ export interface WrapperProps {
 export const Wrapper = styled(Box)<WrapperProps>`
   display: flex;
   flex-wrap: wrap;
-  width: 100%;
+  flex: 1;
+
   ${(props) =>
     props.$alignment
       ? css`
