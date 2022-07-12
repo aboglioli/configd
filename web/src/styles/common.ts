@@ -1,7 +1,8 @@
 export enum Alignment {
-  Start = 'flex-start',
   Center = 'center',
   End = 'flex-end',
+  SpaceBetween = 'space-between',
+  Start = 'flex-start',
 }
 
 export enum Size {

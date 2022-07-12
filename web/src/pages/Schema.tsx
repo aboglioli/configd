@@ -2,6 +2,7 @@ import { FC, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AiOutlineSave } from 'react-icons/ai';
 import { BiEdit } from 'react-icons/bi';
+import dayjs from 'dayjs';
 
 import { Container } from 'container';
 import { RootProp, Schema } from 'domain/schema';
@@ -63,6 +64,14 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
 
   return (
     <Wrapper $vertical $gap={Size.Medium}>
+      <Wrapper $alignment={Alignment.End}>
+        <p style={{ fontSize: '0.8rem' }}>
+          <b>Version</b>: {schema.version} · <b>Created</b>:{' '}
+          {dayjs(schema.created_at).format('DD/MM/YYYY HH:mm')} · <b>Updated</b>:{' '}
+          {dayjs(schema.updated_at).format('DD/MM/YYYY HH:mm')}
+        </p>
+      </Wrapper>
+
       <Wrapper
         $bordered
         $padding={Size.Medium}
