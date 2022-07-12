@@ -14,7 +14,7 @@ export interface SchemasProps {
   setTitle: (title: string) => void;
 }
 
-const Schemas: FC<SchemasProps> = ({ setTitle }) => {
+const SchemasPage: FC<SchemasProps> = ({ setTitle }) => {
   useEffect(() => {
     setTitle('Home');
   }, []);
@@ -74,4 +74,4 @@ const Schemas: FC<SchemasProps> = ({ setTitle }) => {
   );
 };
 
-export default Schemas;
+export default SchemasPage;
