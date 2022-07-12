@@ -1,14 +1,17 @@
 import { FC, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AiOutlineSave } from 'react-icons/ai';
+import { BiEdit } from 'react-icons/bi';
 
-import { Wrapper } from 'styles/Wrapper';
-import { Title, Subtitle, SmallTitle } from 'styles/Title';
-import { Size, Alignment } from 'styles/common';
-import { SchemaProp } from 'components/SchemaProp';
-import { Button } from 'styles/Form';
-import { RootProp, Schema } from 'domain/schema';
 import { Container } from 'container';
+import { RootProp, Schema } from 'domain/schema';
+import { Button, ButtonLink } from 'styles/Form';
+import { ListItem, ListItemImage, ListItemContent, ListItemButtons } from 'styles/List';
+import { Message } from 'styles/Message';
+import { Size, Alignment } from 'styles/common';
+import { Title, Subtitle, SmallTitle, SmallestTitle } from 'styles/Title';
+import { Wrapper } from 'styles/Wrapper';
+import { SchemaProp } from 'components/SchemaProp';
 
 export interface SchemaProps {
   setTitle: (title: string) => void;
@@ -24,6 +27,7 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
   const { schemaId } = useParams();
   const [schema, setSchema] = useState<Schema>();
   const [schemaValid, setSchemaValid] = useState(true);
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
     if (schemaId) {
@@ -43,11 +47,18 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
 
     if (valid && prop) {
       setSchema((schema) => (schema ? { ...schema, schema: prop } : schema));
+      setError('');
     }
   };
 
-  const handleSchemaSave = () => {
-    console.log('Schema save');
+  const handleSchemaSave = async () => {
+    try {
+      const res = await schemaService.updateSchema(schema.id, { schema: schema.schema });
+      console.log(res);
+      setError('');
+    } catch (err) {
+      setError('Invalid schema');
+    }
   };
 
   return (
@@ -64,8 +75,10 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
           <SmallTitle>{schema.id}</SmallTitle>
         </Wrapper>
       </Wrapper>
+
       <Wrapper $bordered $padding={Size.Medium} $vertical $gap={Size.Medium}>
         <Subtitle>Schema</Subtitle>
+        {error && <Message $error>{error}</Message>}
         <SchemaProp prop={schema.schema} onChange={handlePropChange} />
         <Wrapper $alignment={Alignment.End}>
           <Button $primary disabled={!schemaValid} onClick={handleSchemaSave}>
@@ -73,6 +86,30 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
             Save
           </Button>
         </Wrapper>
+      </Wrapper>
+
+      <Wrapper $bordered $padding={Size.Medium} $vertical $gap={Size.Small}>
+        <Subtitle>Configs</Subtitle>
+        {schema.configs.map((config) => (
+          <ListItem key={config.id} $bordered $padding={Size.Small}>
+            <ListItemImage src="/gears.png" />
+            <ListItemContent>
+              <Wrapper $verticalAlignment={Alignment.Center} $gap={Size.Small}>
+                <SmallTitle>{config.name}</SmallTitle>
+                <SmallestTitle>{config.id}</SmallestTitle>
+              </Wrapper>
+            </ListItemContent>
+            <ListItemButtons>
+              <ButtonLink
+                to={`/schemas/${schema.id}/configs/${config.id}`}
+                $size={Size.Small}
+              >
+                <BiEdit />
+                View
+              </ButtonLink>
+            </ListItemButtons>
+          </ListItem>
+        ))}
       </Wrapper>
     </Wrapper>
   );

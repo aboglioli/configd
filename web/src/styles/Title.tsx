@@ -11,3 +11,7 @@ export const Subtitle = styled.h2`
 export const SmallTitle = styled.h3`
   color: var(--dark-color);
 `;
+
+export const SmallestTitle = styled.h4`
+  color: var(--light-color);
+`;

@@ -1,4 +1,9 @@
-import { Schema, SchemaService } from 'domain/schema';
+import { Schema } from 'domain/schema';
+import {
+  SchemaService,
+  UpdateSchemaCommand,
+  UpdateSchemaResponse,
+} from 'domain/schema-service';
 import { PropKind } from 'domain/prop';
 import { Page } from 'domain/page';
 
@@ -95,5 +100,17 @@ export class InMemSchemaService implements SchemaService {
     }
 
     return schema;
+  }
+
+  async updateSchema(
+    schemaId: string,
+    cmd: UpdateSchemaCommand,
+  ): Promise<UpdateSchemaResponse> {
+    const schema = await this.getSchema(schemaId);
+    schema.schema = cmd.schema;
+
+    return {
+      id: schemaId,
+    };
   }
 }
