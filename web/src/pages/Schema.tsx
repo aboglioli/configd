@@ -27,6 +27,7 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
 
   const { schemaId } = useParams();
   const [schema, setSchema] = useState<Schema>();
+  const [schemaExpanded, setSchemaExpanded] = useState(false);
   const [schemaValid, setSchemaValid] = useState(true);
   const [error, setError] = useState<string>();
 
@@ -62,6 +63,10 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
     }
   };
 
+  const toggleSchemaVisibility = () => {
+    setSchemaExpanded((schemaExpanded) => !schemaExpanded);
+  };
+
   return (
     <Wrapper $vertical $gap={Size.Medium}>
       <Wrapper $alignment={Alignment.End}>
@@ -86,15 +91,30 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
       </Wrapper>
 
       <Wrapper $bordered $padding={Size.Medium} $vertical $gap={Size.Medium}>
-        <Subtitle>Schema</Subtitle>
-        {error && <Message $error>{error}</Message>}
-        <SchemaProp prop={schema.schema} onChange={handlePropChange} />
-        <Wrapper $alignment={Alignment.End}>
-          <Button $primary disabled={!schemaValid} onClick={handleSchemaSave}>
-            <AiOutlineSave />
-            Save
-          </Button>
+        <Wrapper>
+          <Subtitle style={{ flex: 1 }}>Schema</Subtitle>
+          {schemaExpanded ? (
+            <Button $size={Size.Small} onClick={toggleSchemaVisibility}>
+              Hide
+            </Button>
+          ) : (
+            <Button $size={Size.Small} onClick={toggleSchemaVisibility}>
+              Expand
+            </Button>
+          )}
         </Wrapper>
+        {error && <Message $error>{error}</Message>}
+        {schemaExpanded && (
+          <>
+            <SchemaProp prop={schema.schema} onChange={handlePropChange} />
+            <Wrapper $alignment={Alignment.End}>
+              <Button $primary disabled={!schemaValid} onClick={handleSchemaSave}>
+                <AiOutlineSave />
+                Save
+              </Button>
+            </Wrapper>
+          </>
+        )}
       </Wrapper>
 
       <Wrapper $bordered $padding={Size.Medium} $vertical $gap={Size.Small}>
