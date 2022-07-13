@@ -12,6 +12,8 @@ pub struct GetConfigCommand {
     pub schema_id: String,
     #[serde(skip_deserializing)]
     pub config_id: String,
+    #[serde(skip_deserializing)]
+    pub source: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -56,7 +58,7 @@ impl GetConfig {
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::new(cmd.config_id)?;
 
-            let config = schema.get_config(&config_id)?;
+            let config = schema.get_config(&config_id, cmd.source)?;
 
             let res = GetConfigResponse {
                 schema_id: schema_id.to_string(),

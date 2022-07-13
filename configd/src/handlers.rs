@@ -1,6 +1,6 @@
 use axum::{
     extract::{Extension, Json, Path, Query},
-    http::StatusCode,
+    http::{header, StatusCode},
     response::{IntoResponse, Response},
 };
 use serde::Serialize;
@@ -99,7 +99,6 @@ pub async fn create_schema(
     Ok((StatusCode::CREATED, Json(res)))
 }
 
-#[axum_macros::debug_handler]
 pub async fn update_schema(
     Path(schema_id): Path<String>,
     Json(mut cmd): Json<UpdateSchemaCommand>,
@@ -148,6 +147,7 @@ pub async fn validate_config(
 
 pub async fn get_config_by_id(
     Path((schema_id, config_id)): Path<(String, String)>,
+    headers: header::HeaderMap,
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
     let serv = GetConfig::new(
@@ -159,6 +159,12 @@ pub async fn get_config_by_id(
         .exec(GetConfigCommand {
             schema_id,
             config_id,
+            source: headers
+                .get(header::ORIGIN)
+                .map(|origin| origin.to_str())
+                .transpose()
+                .unwrap_or(None)
+                .map(|origin| origin.to_string()),
         })
         .await?;
 
