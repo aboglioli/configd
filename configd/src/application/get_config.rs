@@ -85,6 +85,8 @@ impl GetConfig {
                 .await
                 .map_err(Error::Core)?;
 
+            self.schema_repository.save(&mut schema).await?;
+
             return Ok(res);
         }
 
