@@ -1,3 +1,4 @@
+mod access;
 mod config;
 mod diff;
 mod errors;
@@ -11,6 +12,7 @@ mod prop;
 mod schema;
 mod value;
 
+pub use access::*;
 pub use config::*;
 pub use diff::*;
 pub use errors::*;

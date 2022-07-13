@@ -12,6 +12,14 @@ pub struct GetConfigCommand {
     pub schema_id: String,
     #[serde(skip_deserializing)]
     pub config_id: String,
+    #[serde(skip_deserializing)]
+    pub source: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct ConfigAccessDto {
+    pub source: String,
+    pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Serialize)]
@@ -22,6 +30,7 @@ pub struct GetConfigResponse {
     pub data: JsonValue,
     pub valid: bool,
     pub checksum: String,
+    pub accesses: Vec<ConfigAccessDto>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub version: i64,
@@ -49,7 +58,7 @@ impl GetConfig {
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::new(cmd.config_id)?;
 
-            let config = schema.get_config(&config_id)?;
+            let config = schema.get_config(&config_id, cmd.source)?;
 
             let res = GetConfigResponse {
                 schema_id: schema_id.to_string(),
@@ -57,7 +66,15 @@ impl GetConfig {
                 name: config.name().to_string(),
                 data: config.data().into(),
                 valid: config.is_valid(),
-                checksum: hex::encode(config.checksum()),
+                checksum: config.checksum().to_string(),
+                accesses: config
+                    .accesses()
+                    .iter()
+                    .map(|access| ConfigAccessDto {
+                        source: access.source().to_string(),
+                        timestamp: *access.timestamp(),
+                    })
+                    .collect(),
                 created_at: *config.timestamps().created_at(),
                 updated_at: *config.timestamps().updated_at(),
                 version: config.version().value(),
@@ -67,6 +84,8 @@ impl GetConfig {
                 .publish(&schema.events())
                 .await
                 .map_err(Error::Core)?;
+
+            self.schema_repository.save(&mut schema).await?;
 
             return Ok(res);
         }

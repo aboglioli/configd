@@ -11,11 +11,11 @@ impl Sha256Hasher {
 }
 
 impl Hasher for Sha256Hasher {
-    fn hash(&self, data: &[u8]) -> Vec<u8> {
+    fn hash(&self, data: &[u8]) -> String {
         let mut hasher = Sha256::new();
         hasher.update(data);
         let result = hasher.finalize();
 
-        result.to_vec()
+        hex::encode(result)
     }
 }

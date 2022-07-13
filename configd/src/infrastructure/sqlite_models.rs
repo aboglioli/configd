@@ -5,7 +5,13 @@ use serde_json::Value as JsonValue;
 use sqlx::FromRow;
 use std::collections::HashMap;
 
-use crate::domain::{Config, Error, Id, Schema};
+use crate::domain::{Access, Config, Error, Id, Schema};
+
+#[derive(Serialize, Deserialize)]
+pub struct SqliteAccess {
+    pub source: String,
+    pub timestamp: DateTime<Utc>,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct SqliteConfig {
@@ -13,7 +19,8 @@ pub struct SqliteConfig {
     pub name: String,
     pub data: JsonValue,
     pub valid: bool,
-    pub checksum: Vec<u8>,
+    pub checksum: String,
+    pub accesses: Vec<SqliteAccess>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub version: i64,
@@ -26,7 +33,15 @@ impl SqliteConfig {
             name: config.name().to_string(),
             data: config.data().into(),
             valid: config.is_valid(),
-            checksum: config.checksum().to_vec(),
+            checksum: config.checksum().to_string(),
+            accesses: config
+                .accesses()
+                .iter()
+                .map(|access| SqliteAccess {
+                    source: access.source().to_string(),
+                    timestamp: *access.timestamp(),
+                })
+                .collect(),
             created_at: *config.timestamps().created_at(),
             updated_at: *config.timestamps().updated_at(),
             version: config.version().value(),
@@ -40,6 +55,10 @@ impl SqliteConfig {
             self.data.into(),
             self.valid,
             self.checksum,
+            self.accesses
+                .into_iter()
+                .map(|access| Access::new(access.source, access.timestamp))
+                .collect(),
             Timestamps::new(self.created_at, self.updated_at, None).map_err(Error::Core)?,
             Version::new(self.version).map_err(Error::Core)?,
         )

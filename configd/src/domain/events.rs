@@ -56,6 +56,7 @@ impl Publishable for SchemaDeleted {
 pub struct ConfigAccessed {
     pub id: String,
     pub schema_id: String,
+    pub source: Option<String>,
 }
 
 impl Publishable for ConfigAccessed {
@@ -72,8 +73,10 @@ impl Publishable for ConfigAccessed {
 pub struct ConfigCreated {
     pub id: String,
     pub schema_id: String,
+    pub name: String,
     pub data: JsonValue,
     pub valid: bool,
+    pub checksum: String,
 }
 
 impl Publishable for ConfigCreated {
@@ -92,6 +95,7 @@ pub struct ConfigDataChanged {
     pub schema_id: String,
     pub data: JsonValue,
     pub valid: bool,
+    pub checksum: String,
 }
 
 impl Publishable for ConfigDataChanged {

@@ -39,7 +39,7 @@ pub enum Error {
     InvalidConfig(Diff),
 
     // External
-    #[error("core lib: {0}")]
+    #[error("serde: {0}")]
     Serde(#[source] serde_json::Error),
     #[error("core lib: {0}")]
     Core(#[source] core_lib::errors::Error),
