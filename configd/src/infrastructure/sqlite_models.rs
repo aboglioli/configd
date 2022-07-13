@@ -19,7 +19,7 @@ pub struct SqliteConfig {
     pub name: String,
     pub data: JsonValue,
     pub valid: bool,
-    pub checksum: Vec<u8>,
+    pub checksum: String,
     pub accesses: Vec<SqliteAccess>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -33,7 +33,7 @@ impl SqliteConfig {
             name: config.name().to_string(),
             data: config.data().into(),
             valid: config.is_valid(),
-            checksum: config.checksum().to_vec(),
+            checksum: config.checksum().to_string(),
             accesses: config
                 .accesses()
                 .iter()

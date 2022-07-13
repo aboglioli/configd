@@ -66,7 +66,7 @@ impl GetConfig {
                 name: config.name().to_string(),
                 data: config.data().into(),
                 valid: config.is_valid(),
-                checksum: hex::encode(config.checksum()),
+                checksum: config.checksum().to_string(),
                 accesses: config
                     .accesses()
                     .iter()
