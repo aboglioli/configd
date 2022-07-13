@@ -139,6 +139,7 @@ impl Schema {
                 .record(ConfigAccessed {
                     id: config.id().to_string(),
                     schema_id: self.id.to_string(),
+                    source: source.clone(),
                 })
                 .map_err(Error::Core)?;
 
@@ -155,7 +156,7 @@ impl Schema {
         id: Id,
         name: String,
         data: Value,
-        checksum: Vec<u8>,
+        checksum: String,
     ) -> Result<(), Error> {
         if self.configs.contains_key(&id) {
             return Err(Error::ConfigAlreadyExists(id));
@@ -172,8 +173,10 @@ impl Schema {
             .record(ConfigCreated {
                 id: config.id().to_string(),
                 schema_id: self.id.to_string(),
+                name: config.name().to_string(),
                 data: config.data().into(),
                 valid: config.is_valid(),
+                checksum: config.checksum().to_string(),
             })
             .map_err(Error::Core)?;
 
@@ -185,7 +188,7 @@ impl Schema {
         Ok(())
     }
 
-    pub fn update_config(&mut self, id: &Id, data: Value, checksum: Vec<u8>) -> Result<(), Error> {
+    pub fn update_config(&mut self, id: &Id, data: Value, checksum: String) -> Result<(), Error> {
         if let Some(config) = self.configs.get_mut(id) {
             let diff = self.root_prop.validate(&data);
             if !diff.is_empty() {
@@ -200,6 +203,7 @@ impl Schema {
                     schema_id: self.id.to_string(),
                     data: config.data().into(),
                     valid: config.is_valid(),
+                    checksum: config.checksum().to_string(),
                 })
                 .map_err(Error::Core)?;
 

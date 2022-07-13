@@ -9,7 +9,7 @@ pub struct Config {
 
     data: Value,
     valid: bool,
-    checksum: Vec<u8>,
+    checksum: String,
 
     accesses: Vec<Access>,
 
@@ -23,7 +23,7 @@ impl Config {
         name: String,
         data: Value,
         valid: bool,
-        checksum: Vec<u8>,
+        checksum: String,
         accesses: Vec<Access>,
         timestamps: Timestamps,
         version: Version,
@@ -49,7 +49,7 @@ impl Config {
         name: String,
         data: Value,
         valid: bool,
-        checksum: Vec<u8>,
+        checksum: String,
     ) -> Result<Config, Error> {
         Config::new(
             id,
@@ -75,12 +75,7 @@ impl Config {
         &self.data
     }
 
-    pub fn change_data(
-        &mut self,
-        data: Value,
-        valid: bool,
-        checksum: Vec<u8>,
-    ) -> Result<(), Error> {
+    pub fn change_data(&mut self, data: Value, valid: bool, checksum: String) -> Result<(), Error> {
         self.data = data;
         self.valid = valid;
         self.checksum = checksum;
@@ -102,7 +97,7 @@ impl Config {
         self.version = self.version.incr();
     }
 
-    pub fn checksum(&self) -> &[u8] {
+    pub fn checksum(&self) -> &str {
         &self.checksum
     }
 
@@ -146,7 +141,7 @@ mod tests {
             "Config".to_string(),
             Value::String("data".to_string()),
             true,
-            vec![1, 2, 3, 4],
+            "abcd1234".to_string(),
         )
         .unwrap();
 
