@@ -15,6 +15,12 @@ pub struct GetConfigCommand {
 }
 
 #[derive(Serialize)]
+pub struct ConfigAccessDto {
+    pub source: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+#[derive(Serialize)]
 pub struct GetConfigResponse {
     pub schema_id: String,
     pub id: String,
@@ -22,6 +28,7 @@ pub struct GetConfigResponse {
     pub data: JsonValue,
     pub valid: bool,
     pub checksum: String,
+    pub accesses: Vec<ConfigAccessDto>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub version: i64,
@@ -58,6 +65,14 @@ impl GetConfig {
                 data: config.data().into(),
                 valid: config.is_valid(),
                 checksum: hex::encode(config.checksum()),
+                accesses: config
+                    .accesses()
+                    .iter()
+                    .map(|access| ConfigAccessDto {
+                        source: access.source().to_string(),
+                        timestamp: access.timestamp().clone(),
+                    })
+                    .collect(),
                 created_at: *config.timestamps().created_at(),
                 updated_at: *config.timestamps().updated_at(),
                 version: config.version().value(),
