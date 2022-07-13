@@ -1,6 +1,6 @@
 use core_lib::models::{Timestamps, Version};
 
-use crate::domain::{Error, Id, Value};
+use crate::domain::{Access, Error, Id, Value};
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -10,6 +10,8 @@ pub struct Config {
     data: Value,
     valid: bool,
     checksum: Vec<u8>,
+
+    accesses: Vec<Access>,
 
     timestamps: Timestamps,
     version: Version,
@@ -22,6 +24,7 @@ impl Config {
         data: Value,
         valid: bool,
         checksum: Vec<u8>,
+        accesses: Vec<Access>,
         timestamps: Timestamps,
         version: Version,
     ) -> Result<Config, Error> {
@@ -35,6 +38,7 @@ impl Config {
             data,
             valid,
             checksum,
+            accesses,
             timestamps,
             version,
         })
@@ -53,6 +57,7 @@ impl Config {
             data,
             valid,
             checksum,
+            Vec::new(),
             Timestamps::create(),
             Version::init_version(),
         )
@@ -68,22 +73,6 @@ impl Config {
 
     pub fn data(&self) -> &Value {
         &self.data
-    }
-
-    pub fn is_valid(&self) -> bool {
-        self.valid
-    }
-
-    pub fn checksum(&self) -> &[u8] {
-        &self.checksum
-    }
-
-    pub fn timestamps(&self) -> &Timestamps {
-        &self.timestamps
-    }
-
-    pub fn version(&self) -> &Version {
-        &self.version
     }
 
     pub fn change_data(
@@ -102,10 +91,58 @@ impl Config {
         Ok(())
     }
 
+    pub fn is_valid(&self) -> bool {
+        self.valid
+    }
+
     pub fn mark_as_invalid(&mut self) {
         self.valid = false;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
+    }
+
+    pub fn checksum(&self) -> &[u8] {
+        &self.checksum
+    }
+
+    pub fn accesses(&self) -> &[Access] {
+        &self.accesses
+    }
+
+    pub fn register_access(&mut self, source: String) {
+        self.accesses.push(Access::create(source));
+    }
+
+    pub fn timestamps(&self) -> &Timestamps {
+        &self.timestamps
+    }
+
+    pub fn version(&self) -> &Version {
+        &self.version
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn register_access() {
+        let mut config = Config::create(
+            Id::new("config#01").unwrap(),
+            "Config".to_string(),
+            Value::String("data".to_string()),
+            true,
+            vec![1, 2, 3, 4],
+        )
+        .unwrap();
+
+        // New sources
+        config.register_access("Source 1".to_string());
+        config.register_access("Source 2".to_string());
+
+        assert_eq!(config.accesses()[0].source(), "Source 1");
+        assert_eq!(config.accesses()[1].source(), "Source 2");
     }
 }
