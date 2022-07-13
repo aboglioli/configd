@@ -1,9 +1,4 @@
 import { Prop } from 'domain/prop';
-import { Page } from 'domain/page';
-
-export interface SchemaService {
-  getSchemas(): Promise<Page<Schema>>;
-}
 
 export type RootProp = { $schema: Prop } | RootProp[] | { [key: string]: RootProp };
 

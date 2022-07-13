@@ -6,7 +6,7 @@ mod handlers;
 mod infrastructure;
 
 use axum::{
-    http::Method,
+    http::{header, Method},
     routing::{get, post},
     Extension, Router, Server,
 };
@@ -23,6 +23,7 @@ async fn main() {
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_headers([header::ACCEPT, header::CONTENT_TYPE])
         .allow_origin(Any);
 
     let app = Router::new()

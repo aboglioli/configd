@@ -4,30 +4,31 @@ import { Box } from 'styles/Box';
 import { Alignment } from 'styles/common';
 
 export interface WrapperProps {
-  alignment?: Alignment;
-  verticalAlignment?: Alignment;
-  vertical?: boolean;
+  $alignment?: Alignment;
+  $verticalAlignment?: Alignment;
+  $vertical?: boolean;
 }
 
 export const Wrapper = styled(Box)<WrapperProps>`
   display: flex;
   flex-wrap: wrap;
-  width: 100%;
+  flex: 1;
+
   ${(props) =>
-    props.alignment
+    props.$alignment
       ? css`
-          justify-content: ${props.alignment};
+          justify-content: ${props.$alignment};
         `
       : ''}
   ${(props) =>
-    props.verticalAlignment
+    props.$verticalAlignment
       ? css`
-          align-items: ${props.verticalAlignment};
+          align-items: ${props.$verticalAlignment};
         `
       : ''}
 
       ${(props) =>
-    props.vertical
+    props.$vertical
       ? css`
           flex-direction: column;
         `

@@ -1,82 +1,84 @@
-import { FC, useEffect } from 'react';
-// import { FaBeer } from 'react-icons/fa';
-import { BsDiagram3, BsSearch } from 'react-icons/bs';
+import { FC, useEffect, useState } from 'react';
+import { BsDiagram3 } from 'react-icons/bs';
 import { GrDocumentConfig } from 'react-icons/gr';
 import { BiEdit } from 'react-icons/bi';
 
-import { useSchemas } from 'hooks/schemas';
-import { Wrapper } from 'styles/Wrapper';
-import { Size, Alignment } from 'styles/common';
-import { Title } from 'styles/Title';
-import { Input, Button } from 'styles/Form';
+import { Container } from 'container';
+import { Page } from 'domain/page';
+import { Schema } from 'domain/schema';
+import { Input, ButtonLink } from 'styles/Form';
 import { ListItem, ListItemImage, ListItemContent, ListItemButtons } from 'styles/List';
+import { Size, Alignment } from 'styles/common';
+import { Title, SmallTitle, SmallestTitle } from 'styles/Title';
+import { Wrapper } from 'styles/Wrapper';
 
 export interface SchemasProps {
   setTitle: (title: string) => void;
 }
 
-const Schemas: FC<SchemasProps> = ({ setTitle }) => {
+const SchemasPage: FC<SchemasProps> = ({ setTitle }) => {
   useEffect(() => {
     setTitle('Home');
   }, []);
 
-  const { loading, data: schemasPage } = useSchemas();
-  console.log(loading, schemasPage);
+  const { schemaService } = Container.get();
+  const [schemasPage, setSchemasPage] = useState<Page<Schema>>();
 
-  if (loading || !schemasPage) {
+  useEffect(() => {
+    (async () => {
+      const res = await schemaService.getSchemas();
+      setSchemasPage(res);
+    })();
+  }, []);
+
+  if (!schemasPage) {
     return <b>Loading...</b>;
   }
 
   const schemas = schemasPage.data;
 
-  const viewSchema = () => {
-    console.log('View schema');
-  };
-
-  const createConfig = () => {
-    console.log('Create config');
-  };
-
   return (
-    <Wrapper vertical gap={Size.Medium}>
-      <Wrapper bordered padding={Size.Medium}>
+    <Wrapper $vertical $gap={Size.Medium}>
+      <Wrapper $bordered $padding={Size.Medium}>
         <Title>Schemas</Title>
       </Wrapper>
 
       <Wrapper
-        bordered
-        padding={Size.Medium}
-        gap={Size.Small}
-        verticalAlignment={Alignment.Center}
+        $bordered
+        $padding={Size.Medium}
+        $gap={Size.Small}
+        $verticalAlignment={Alignment.Center}
       >
-        <BsSearch />
-        <Input placeholder="Search schemas..." />
-        <Button primary>
+        <Input placeholder="Search schemas..." $size={Size.Medium} />
+        <ButtonLink to="/schemas" $primary $size={Size.Medium}>
           <BsDiagram3 />
           Create schema
-        </Button>
+        </ButtonLink>
       </Wrapper>
 
-      <Wrapper bordered padding={Size.Medium} gap={Size.Small}>
+      <Wrapper $bordered $padding={Size.Medium} $gap={Size.Small}>
         {schemas.map((schema) => (
-          <ListItem key={schema.id} bordered padding={Size.Small}>
-            <ListItemImage src="schema.png" />
+          <ListItem key={schema.id} $bordered $padding={Size.Small}>
+            <ListItemImage src="/schema.png" />
             <ListItemContent>
-              <h3>{schema.name}</h3>
+              <Wrapper $verticalAlignment={Alignment.Center} $gap={Size.Small}>
+                <SmallTitle>{schema.name}</SmallTitle>
+                <SmallestTitle>{schema.id}</SmallestTitle>
+              </Wrapper>
               <small>
                 {schema.configs.length} configurations:{' '}
-                <b>{schema.configs.map((config) => config.id).join(', ')}</b>.
+                {schema.configs.map((config) => config.id).join(', ')}.
               </small>
             </ListItemContent>
             <ListItemButtons>
-              <Button onClick={viewSchema}>
+              <ButtonLink to={`/schemas/${schema.id}`} $size={Size.Small}>
                 <BiEdit />
                 View
-              </Button>
-              <Button primary onClick={createConfig}>
+              </ButtonLink>
+              <ButtonLink to={`/schemas/${schema.id}/config`} $size={Size.Small} $primary>
                 <GrDocumentConfig />
                 Create config
-              </Button>
+              </ButtonLink>
             </ListItemButtons>
           </ListItem>
         ))}
@@ -85,4 +87,4 @@ const Schemas: FC<SchemasProps> = ({ setTitle }) => {
   );
 };
 
-export default Schemas;
+export default SchemasPage;
