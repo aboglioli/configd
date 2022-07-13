@@ -111,7 +111,19 @@ impl Config {
     }
 
     pub fn register_access(&mut self, source: String) {
-        self.accesses.push(Access::create(source));
+        if let Some(access) = self
+            .accesses
+            .iter_mut()
+            .find(|access| access.source() == source)
+        {
+            *access = Access::create(source);
+        } else {
+            self.accesses.push(Access::create(source));
+        }
+
+        self.accesses
+            .sort_by(|access1, access2| access2.timestamp().cmp(access1.timestamp()));
+        self.accesses.truncate(6);
     }
 
     pub fn timestamps(&self) -> &Timestamps {
@@ -142,7 +154,36 @@ mod tests {
         config.register_access("Source 1".to_string());
         config.register_access("Source 2".to_string());
 
+        assert_eq!(config.accesses()[0].source(), "Source 2");
+        assert_eq!(config.accesses()[1].source(), "Source 1");
+
+        // Existing source
+        config.register_access("Source 1".to_string());
+
         assert_eq!(config.accesses()[0].source(), "Source 1");
         assert_eq!(config.accesses()[1].source(), "Source 2");
+
+        // New source
+        config.register_access("Source 3".to_string());
+
+        assert_eq!(config.accesses().len(), 3);
+        assert_eq!(config.accesses()[0].source(), "Source 3");
+        assert_eq!(config.accesses()[1].source(), "Source 1");
+        assert_eq!(config.accesses()[2].source(), "Source 2");
+
+        // Save last accesses only
+
+        config.register_access("Source 4".to_string());
+        config.register_access("Source 5".to_string());
+        config.register_access("Source 6".to_string());
+        config.register_access("Source 7".to_string());
+
+        assert_eq!(config.accesses().len(), 6);
+        assert_eq!(config.accesses()[0].source(), "Source 7");
+        assert_eq!(config.accesses()[1].source(), "Source 6");
+        assert_eq!(config.accesses()[2].source(), "Source 5");
+        assert_eq!(config.accesses()[3].source(), "Source 4");
+        assert_eq!(config.accesses()[4].source(), "Source 3");
+        assert_eq!(config.accesses()[5].source(), "Source 1");
     }
 }
