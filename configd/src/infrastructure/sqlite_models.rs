@@ -39,7 +39,7 @@ impl SqliteConfig {
                 .iter()
                 .map(|access| SqliteAccess {
                     source: access.source().to_string(),
-                    timestamp: access.timestamp().clone(),
+                    timestamp: *access.timestamp(),
                 })
                 .collect(),
             created_at: *config.timestamps().created_at(),

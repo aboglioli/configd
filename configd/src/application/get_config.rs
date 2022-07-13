@@ -72,7 +72,7 @@ impl GetConfig {
                     .iter()
                     .map(|access| ConfigAccessDto {
                         source: access.source().to_string(),
-                        timestamp: access.timestamp().clone(),
+                        timestamp: *access.timestamp(),
                     })
                     .collect(),
                 created_at: *config.timestamps().created_at(),
