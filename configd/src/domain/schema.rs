@@ -133,17 +133,26 @@ impl Schema {
         Ok(())
     }
 
-    pub fn get_config(&mut self, id: &Id, source: Option<String>) -> Result<&Config, Error> {
+    pub fn get_config(
+        &mut self,
+        id: &Id,
+        source: Option<Id>,
+        instance: Option<Id>,
+    ) -> Result<&Config, Error> {
         if let Some(config) = self.configs.get_mut(id) {
             self.event_collector
                 .record(ConfigAccessed {
                     id: config.id().to_string(),
                     schema_id: self.id.to_string(),
-                    source: source.clone(),
+                    source: source.as_ref().map(|source| source.to_string()),
+                    instance: instance.as_ref().map(|instance| instance.to_string()),
                 })
                 .map_err(Error::Core)?;
 
-            config.register_access(source.unwrap_or_else(|| "unknown".to_string()));
+            config.register_access(
+                source.unwrap_or_else(|| Id::new("unknown").unwrap()),
+                instance.unwrap_or_else(|| Id::new("unknown").unwrap()),
+            );
 
             Ok(config)
         } else {

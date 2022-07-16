@@ -10,6 +10,7 @@ use crate::domain::{Access, Config, Error, Id, Schema};
 #[derive(Serialize, Deserialize)]
 pub struct SqliteAccess {
     pub source: String,
+    pub instance: String,
     pub timestamp: DateTime<Utc>,
 }
 
@@ -39,6 +40,7 @@ impl SqliteConfig {
                 .iter()
                 .map(|access| SqliteAccess {
                     source: access.source().to_string(),
+                    instance: access.instance().to_string(),
                     timestamp: *access.timestamp(),
                 })
                 .collect(),
@@ -57,8 +59,14 @@ impl SqliteConfig {
             self.checksum,
             self.accesses
                 .into_iter()
-                .map(|access| Access::new(access.source, access.timestamp))
-                .collect(),
+                .map(|access| {
+                    Ok(Access::new(
+                        Id::new(access.source)?,
+                        Id::new(access.instance)?,
+                        access.timestamp,
+                    ))
+                })
+                .collect::<Result<Vec<Access>, Error>>()?,
             Timestamps::new(self.created_at, self.updated_at, None).map_err(Error::Core)?,
             Version::new(self.version).map_err(Error::Core)?,
         )

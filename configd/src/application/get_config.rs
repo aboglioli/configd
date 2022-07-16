@@ -14,11 +14,14 @@ pub struct GetConfigCommand {
     pub config_id: String,
     #[serde(skip_deserializing)]
     pub source: Option<String>,
+    #[serde(skip_deserializing)]
+    pub instance: Option<String>,
 }
 
 #[derive(Serialize)]
 pub struct ConfigAccessDto {
     pub source: String,
+    pub instance: String,
     pub timestamp: DateTime<Utc>,
 }
 
@@ -57,8 +60,10 @@ impl GetConfig {
 
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::new(cmd.config_id)?;
+            let source = cmd.source.map(Id::new).transpose()?;
+            let instance = cmd.instance.map(Id::new).transpose()?;
 
-            let config = schema.get_config(&config_id, cmd.source)?;
+            let config = schema.get_config(&config_id, source, instance)?;
 
             let res = GetConfigResponse {
                 schema_id: schema_id.to_string(),
@@ -72,6 +77,7 @@ impl GetConfig {
                     .iter()
                     .map(|access| ConfigAccessDto {
                         source: access.source().to_string(),
+                        instance: access.instance().to_string(),
                         timestamp: *access.timestamp(),
                     })
                     .collect(),
