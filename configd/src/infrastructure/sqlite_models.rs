@@ -12,6 +12,7 @@ pub struct SqliteAccess {
     pub source: String,
     pub instance: String,
     pub timestamp: DateTime<Utc>,
+    pub previous: Option<DateTime<Utc>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -42,6 +43,7 @@ impl SqliteConfig {
                     source: access.source().to_string(),
                     instance: access.instance().to_string(),
                     timestamp: *access.timestamp(),
+                    previous: access.previous().copied(),
                 })
                 .collect(),
             created_at: *config.timestamps().created_at(),
@@ -64,7 +66,7 @@ impl SqliteConfig {
                         Id::new(access.source)?,
                         Id::new(access.instance)?,
                         access.timestamp,
-                        None,
+                        access.previous,
                     ))
                 })
                 .collect::<Result<Vec<Access>, Error>>()?,
