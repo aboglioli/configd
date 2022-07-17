@@ -1,3 +1,4 @@
+use chrono::Duration;
 use core_lib::models::{Timestamps, Version};
 
 use crate::domain::{Access, Error, Id, Value};
@@ -118,6 +119,18 @@ impl Config {
 
         self.accesses
             .sort_by(|access1, access2| access2.timestamp().cmp(access1.timestamp()));
+
+        self.accesses.retain(|access| {
+            let max_duration = access
+                .elapsed_time_from_previous()
+                .map(|previous| {
+                    previous * 2
+                })
+                .unwrap_or_else(|| Duration::minutes(1));
+
+            access.elapsed_time() <= max_duration
+        });
+
         self.accesses.truncate(6);
     }
 

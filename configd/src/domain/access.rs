@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 
 use crate::domain::Id;
 
@@ -52,6 +52,14 @@ impl Access {
             Utc::now(),
             Some(self.timestamp),
         )
+    }
+
+    pub fn elapsed_time(&self) -> Duration {
+        Utc::now() - self.timestamp
+    }
+
+    pub fn elapsed_time_from_previous(&self) -> Option<Duration> {
+        self.previous.map(|previous| self.timestamp - previous)
     }
 }
 
