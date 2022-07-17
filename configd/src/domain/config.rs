@@ -111,7 +111,7 @@ impl Config {
             .iter_mut()
             .find(|access| access.source() == &source && access.instance() == &instance)
         {
-            *access = Access::create(source, instance);
+            *access = access.ping();
         } else {
             self.accesses.push(Access::create(source, instance));
         }

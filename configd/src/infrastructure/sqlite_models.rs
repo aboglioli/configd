@@ -64,6 +64,7 @@ impl SqliteConfig {
                         Id::new(access.source)?,
                         Id::new(access.instance)?,
                         access.timestamp,
+                        None,
                     ))
                 })
                 .collect::<Result<Vec<Access>, Error>>()?,
