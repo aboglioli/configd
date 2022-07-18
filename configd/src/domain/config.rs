@@ -123,10 +123,16 @@ impl Config {
         self.accesses.retain(|access| {
             let max_duration = access
                 .elapsed_time_from_previous()
-                .map(|previous| {
-                    previous * 2
+                .map(|mut previous| {
+                    previous = previous * 2;
+
+                    if previous.num_seconds() < 2 {
+                        previous = previous + Duration::seconds(1);
+                    }
+
+                    previous
                 })
-                .unwrap_or_else(|| Duration::minutes(1));
+                .unwrap_or_else(|| Duration::seconds(30));
 
             access.elapsed_time() <= max_duration
         });
