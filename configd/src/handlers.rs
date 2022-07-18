@@ -160,11 +160,17 @@ pub async fn get_config_by_id(
             schema_id,
             config_id,
             source: headers
-                .get(header::ORIGIN)
-                .map(|origin| origin.to_str())
+                .get("X-Configd-Source")
+                .map(|header| header.to_str())
                 .transpose()
                 .unwrap_or(None)
-                .map(|origin| origin.to_string()),
+                .map(|header| header.to_string()),
+            instance: headers
+                .get("X-Configd-Instance")
+                .map(|header| header.to_str())
+                .transpose()
+                .unwrap_or(None)
+                .map(|header| header.to_string()),
         })
         .await?;
 
