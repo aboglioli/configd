@@ -10,13 +10,12 @@ import (
 )
 
 var (
-	ErrEmptyUrl       = errors.New("empty url")
-	ErrEmptySource    = errors.New("empty source")
-	ErrEmptyInstance  = errors.New("empty instance")
-	ErrEmptySchemaId  = errors.New("schema_id is required")
-	ErrEmptyConfigId  = errors.New("config_id is required")
+	ErrEmptyUrl        = errors.New("empty url")
+	ErrEmptySource     = errors.New("empty source")
+	ErrEmptyInstance   = errors.New("empty instance")
+	ErrEmptySchemaId   = errors.New("schema_id is required")
+	ErrEmptyConfigId   = errors.New("config_id is required")
 	ErrInvalidInterval = errors.New("interval must be between 1 second and 1 minute")
-	ErrFetchingConfig = errors.New("fetching config")
 )
 
 type ConfigHandler func(*Config, error) error
@@ -27,7 +26,7 @@ type ConfigdClient struct {
 	instance string
 
 	httpClient *http.Client
-	errCh chan error
+	errCh      chan error
 }
 
 func NewConfigdClient(

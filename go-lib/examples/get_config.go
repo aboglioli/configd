@@ -11,11 +11,11 @@ import (
 type Database struct {
 	Name string `json:"name"`
 	Host string `json:"host"`
-	Port int64 `json:"port"`
+	Port int64  `json:"port"`
 }
 
 type MyConfig struct {
-	Env string `json:"env"`
+	Env       string     `json:"env"`
 	Databases []Database `json:"databases"`
 }
 
@@ -48,11 +48,13 @@ func main() {
 		return nil
 	}
 
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+
 	if err := client.GetConfig(
-		context.Background(),
+		ctx,
 		"custom-schema",
 		"dev",
-		2 * time.Second,
+		2*time.Second,
 		&MyConfig{},
 		configHandler,
 	); err != nil {
