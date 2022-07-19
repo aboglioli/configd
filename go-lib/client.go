@@ -60,7 +60,6 @@ func (c *ConfigdClient) GetConfig(
 	schemaId string,
 	configId string,
 	interval time.Duration,
-	customConfig interface{},
 	configHandler ConfigHandler,
 ) error {
 	if schemaId == "" {
@@ -87,8 +86,11 @@ func (c *ConfigdClient) GetConfig(
 			case <-ctx.Done():
 				c.notifyErr(nil)
 			case <-tick.C:
-				config := &Config{Data: customConfig}
-				err := c.fetchConfig(ctx, schemaId, configId, config)
+				config, err := c.fetchConfig(ctx, schemaId, configId)
+				if err != nil {
+					c.notifyErr(err)
+					return
+				}
 
 				if err := configHandler(config, err); err != nil {
 					c.notifyErr(err)
@@ -109,8 +111,7 @@ func (c *ConfigdClient) fetchConfig(
 	ctx context.Context,
 	schemaId string,
 	configId string,
-	config *Config,
-) error {
+) (*Config, error) {
 	url := fmt.Sprintf(
 		"%s/schemas/%s/configs/%s",
 		c.url,
@@ -124,15 +125,16 @@ func (c *ConfigdClient) fetchConfig(
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 
-	if err := json.NewDecoder(res.Body).Decode(config); err != nil {
-		return err
+	var config Config
+	if err := json.NewDecoder(res.Body).Decode(&config); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return &config, nil
 }
 
 func (c *ConfigdClient) notifyErr(err error) {

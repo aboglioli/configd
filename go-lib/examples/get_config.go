@@ -34,7 +34,10 @@ func main() {
 			return err
 		}
 
-		data := c.Data.(*MyConfig)
+		var myConfig MyConfig
+		if err := c.Unmarshal(&myConfig); err != nil {
+			return err
+		}
 
 		fmt.Printf("#####\n")
 		fmt.Printf("· Name: %s\n", c.Name)
@@ -43,7 +46,7 @@ func main() {
 		fmt.Printf("· Accesses: %d\n", len(c.Accesses))
 		fmt.Printf("· Updated at: %s\n", c.UpdatedAt)
 		fmt.Printf("· Version: %d\n", c.Version)
-		fmt.Printf("· Data: %#v\n", data)
+		fmt.Printf("· Data: %#v\n", myConfig)
 
 		return nil
 	}
@@ -55,7 +58,6 @@ func main() {
 		"custom-schema",
 		"dev",
 		2*time.Second,
-		&MyConfig{},
 		configHandler,
 	); err != nil {
 		panic(err)
