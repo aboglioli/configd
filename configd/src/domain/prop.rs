@@ -216,7 +216,7 @@ impl Prop {
 
         // Null values
         if value == &Value::Null {
-            if self.is_required() {
+            if self.is_required() && self.default_value().is_none() {
                 diff.add(Reason::NullValue, None);
             }
         } else {
@@ -333,6 +333,10 @@ mod tests {
             .validate(&Value::Array(vec![Value::Null]))
             .is_empty());
         assert!(!Prop::int(true, None, None, None)
+            .unwrap()
+            .validate(&Value::Null)
+            .is_empty());
+        assert!(Prop::int(true, Some(Value::Int(32)), None, None)
             .unwrap()
             .validate(&Value::Null)
             .is_empty());
