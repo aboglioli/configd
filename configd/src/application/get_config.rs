@@ -65,14 +65,16 @@ impl GetConfig {
             let instance = cmd.instance.map(Id::new).transpose()?;
 
             let config = schema.get_config(&config_id, source, instance)?;
+            let data = schema.populate_config_data(&config)?;
+            let checksum = data.checksum();
 
             let res = GetConfigResponse {
                 schema_id: schema_id.to_string(),
                 id: config.id().to_string(),
                 name: config.name().to_string(),
-                data: config.data().into(),
+                data: data.into(),
                 valid: config.is_valid(),
-                checksum: config.data().checksum(),
+                checksum,
                 accesses: config
                     .accesses()
                     .iter()

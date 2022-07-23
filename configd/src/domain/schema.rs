@@ -155,11 +155,10 @@ impl Schema {
             );
         }
 
-        if let Some(config) = self.configs.get(id) {
-            self.populate_config(config)
-        } else {
-            Err(Error::ConfigNotFound(id.clone()))
-        }
+        self.configs
+            .get(id)
+            .map(Clone::clone)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))
     }
 
     pub fn add_config(&mut self, id: Id, name: String, data: Value) -> Result<(), Error> {
@@ -255,8 +254,8 @@ impl Schema {
         Ok(())
     }
 
-    pub fn populate_config(&self, config: &Config) -> Result<Config, Error> {
-        Ok(config.clone())
+    pub fn populate_config_data(&self, config: &Config) -> Result<Value, Error> {
+        Ok(config.data().clone())
     }
 }
 
