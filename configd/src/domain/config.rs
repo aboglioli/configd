@@ -10,7 +10,6 @@ pub struct Config {
 
     data: Value,
     valid: bool,
-    checksum: String,
 
     accesses: Vec<Access>,
 
@@ -24,7 +23,6 @@ impl Config {
         name: String,
         data: Value,
         valid: bool,
-        checksum: String,
         accesses: Vec<Access>,
         timestamps: Timestamps,
         version: Version,
@@ -38,26 +36,18 @@ impl Config {
             name,
             data,
             valid,
-            checksum,
             accesses,
             timestamps,
             version,
         })
     }
 
-    pub fn create(
-        id: Id,
-        name: String,
-        data: Value,
-        valid: bool,
-        checksum: String,
-    ) -> Result<Config, Error> {
+    pub fn create(id: Id, name: String, data: Value, valid: bool) -> Result<Config, Error> {
         Config::new(
             id,
             name,
             data,
             valid,
-            checksum,
             Vec::new(),
             Timestamps::create(),
             Version::init_version(),
@@ -76,10 +66,9 @@ impl Config {
         &self.data
     }
 
-    pub fn change_data(&mut self, data: Value, valid: bool, checksum: String) -> Result<(), Error> {
+    pub fn change_data(&mut self, data: Value, valid: bool) -> Result<(), Error> {
         self.data = data;
         self.valid = valid;
-        self.checksum = checksum;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
@@ -96,10 +85,6 @@ impl Config {
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
-    }
-
-    pub fn checksum(&self) -> &str {
-        &self.checksum
     }
 
     pub fn accesses(&self) -> &[Access] {
@@ -160,7 +145,6 @@ mod tests {
             "Config".to_string(),
             Value::String("data".to_string()),
             true,
-            "abcd1234".to_string(),
         )
         .unwrap();
 

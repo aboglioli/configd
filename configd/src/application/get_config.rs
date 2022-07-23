@@ -72,7 +72,7 @@ impl GetConfig {
                 name: config.name().to_string(),
                 data: config.data().into(),
                 valid: config.is_valid(),
-                checksum: config.checksum().to_string(),
+                checksum: config.data().checksum(),
                 accesses: config
                     .accesses()
                     .iter()

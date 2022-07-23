@@ -57,7 +57,7 @@ impl GetSchema {
                         id: config.id().to_string(),
                         name: config.name().to_string(),
                         valid: config.is_valid(),
-                        checksum: config.checksum().to_string(),
+                        checksum: config.data().checksum(),
                         created_at: *config.timestamps().created_at(),
                         updated_at: *config.timestamps().updated_at(),
                         version: config.version().value(),

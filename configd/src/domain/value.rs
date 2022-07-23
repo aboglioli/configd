@@ -1,4 +1,5 @@
 use serde_json::{Number, Value as JsonValue};
+use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, HashMap},
     fmt,
@@ -56,6 +57,18 @@ impl Value {
             Value::Array(_) => Kind::Array,
             Value::Object(_) => Kind::Object,
         }
+    }
+
+    pub fn checksum(&self) -> String {
+        let json: JsonValue = self.into();
+
+        // It's safe because Value is a valid JSON
+        let data = serde_json::to_vec(&json).unwrap();
+
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+
+        hex::encode(hasher.finalize())
     }
 }
 
