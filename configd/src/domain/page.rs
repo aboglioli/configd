@@ -33,10 +33,6 @@ impl<T> Page<T> {
         self.total
     }
 
-    pub fn data(&self) -> &[T] {
-        &self.data
-    }
-
     pub fn into_data(self) -> Vec<T> {
         self.data
     }

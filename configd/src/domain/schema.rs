@@ -138,7 +138,7 @@ impl Schema {
         id: &Id,
         source: Option<Id>,
         instance: Option<Id>,
-    ) -> Result<&Config, Error> {
+    ) -> Result<Config, Error> {
         if let Some(config) = self.configs.get_mut(id) {
             self.event_collector
                 .record(ConfigAccessed {
@@ -153,20 +153,15 @@ impl Schema {
                 source.unwrap_or_else(|| Id::new("unknown").unwrap()),
                 instance.unwrap_or_else(|| Id::new("unknown").unwrap()),
             );
-
-            Ok(config)
-        } else {
-            Err(Error::ConfigNotFound(id.clone()))
         }
+
+        self.configs
+            .get(id)
+            .map(Clone::clone)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))
     }
 
-    pub fn add_config(
-        &mut self,
-        id: Id,
-        name: String,
-        data: Value,
-        checksum: String,
-    ) -> Result<(), Error> {
+    pub fn add_config(&mut self, id: Id, name: String, data: Value) -> Result<(), Error> {
         if self.configs.contains_key(&id) {
             return Err(Error::ConfigAlreadyExists(id));
         }
@@ -176,7 +171,7 @@ impl Schema {
             return Err(Error::InvalidConfig(diff));
         }
 
-        let config = Config::create(id, name, data, diff.is_empty(), checksum)?;
+        let config = Config::create(id, name, data, diff.is_empty())?;
 
         self.event_collector
             .record(ConfigCreated {
@@ -185,7 +180,6 @@ impl Schema {
                 name: config.name().to_string(),
                 data: config.data().into(),
                 valid: config.is_valid(),
-                checksum: config.checksum().to_string(),
             })
             .map_err(Error::Core)?;
 
@@ -197,14 +191,14 @@ impl Schema {
         Ok(())
     }
 
-    pub fn update_config(&mut self, id: &Id, data: Value, checksum: String) -> Result<(), Error> {
+    pub fn update_config(&mut self, id: &Id, data: Value) -> Result<(), Error> {
         if let Some(config) = self.configs.get_mut(id) {
             let diff = self.root_prop.validate(&data);
             if !diff.is_empty() {
                 return Err(Error::InvalidConfig(diff));
             }
 
-            config.change_data(data, diff.is_empty(), checksum)?;
+            config.change_data(data, diff.is_empty())?;
 
             self.event_collector
                 .record(ConfigDataChanged {
@@ -212,7 +206,6 @@ impl Schema {
                     schema_id: self.id.to_string(),
                     data: config.data().into(),
                     valid: config.is_valid(),
-                    checksum: config.checksum().to_string(),
                 })
                 .map_err(Error::Core)?;
 
@@ -260,6 +253,10 @@ impl Schema {
 
         Ok(())
     }
+
+    pub fn populate_config(&self, config: &Config) -> Value {
+        self.root_prop.populate(config.data())
+    }
 }
 
 #[cfg(test)]
@@ -286,7 +283,7 @@ mod tests {
 
     #[test]
     fn validate() {
-        let schema = Schema::new(
+        let schema = Schema::create(
             Id::new("schema#01").unwrap(),
             "Schema 01".to_string(),
             Prop::object(BTreeMap::from([
@@ -309,10 +306,6 @@ mod tests {
                     Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap())).unwrap(),
                 ),
             ])),
-            HashMap::new(),
-            Timestamps::create(),
-            Version::init_version(),
-            None,
         )
         .unwrap();
 
@@ -360,5 +353,30 @@ mod tests {
                 ("non_existing".to_string(), Value::Int(1)),
             ])))
             .is_empty());
+    }
+
+    #[test]
+    fn add_and_get_populated_config() {
+        let mut schema = Schema::create(
+            Id::new("schema-01").unwrap(),
+            "Schema 01".to_string(),
+            Prop::string(true, Some(Value::String("default".to_string())), None, None).unwrap(),
+        )
+        .unwrap();
+
+        let config_id = Id::new("config-01").unwrap();
+
+        schema
+            .add_config(config_id.clone(), "Config 01".to_string(), Value::Null)
+            .unwrap();
+
+        let config = schema.get_config(&config_id, None, None).unwrap();
+
+        assert_eq!(config.id(), &config_id);
+        assert_eq!(config.name(), "Config 01");
+        assert_eq!(config.data(), &Value::Null);
+
+        let data = schema.populate_config(&config);
+        assert_eq!(data, Value::String("default".to_string()));
     }
 }

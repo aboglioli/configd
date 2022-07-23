@@ -15,7 +15,7 @@ impl SQLiteSchemaRepository {
         sqlx::query(
             "
             CREATE TABLE IF NOT EXISTS schemas(
-              id VARCHAR(255),
+              id VARCHAR(255) PRIMARY KEY,
               name TEXT,
               root_prop JSON,
               configs JSON,

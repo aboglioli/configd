@@ -77,7 +77,6 @@ pub struct ConfigCreated {
     pub name: String,
     pub data: JsonValue,
     pub valid: bool,
-    pub checksum: String,
 }
 
 impl Publishable for ConfigCreated {
@@ -96,7 +95,6 @@ pub struct ConfigDataChanged {
     pub schema_id: String,
     pub data: JsonValue,
     pub valid: bool,
-    pub checksum: String,
 }
 
 impl Publishable for ConfigDataChanged {
