@@ -59,6 +59,10 @@ impl Value {
         }
     }
 
+    pub fn is_null(&self) -> bool {
+        self == &Value::Null
+    }
+
     pub fn checksum(&self) -> String {
         let json: JsonValue = self.into();
 

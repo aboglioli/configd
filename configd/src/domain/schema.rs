@@ -255,7 +255,8 @@ impl Schema {
     }
 
     pub fn populate_config(&self, config: &Config) -> Value {
-        self.root_prop.populate(config.data())
+        self.root_prop
+            .populate(config.data(), config.accesses().len() as i64)
     }
 }
 
@@ -303,7 +304,7 @@ mod tests {
                 ),
                 (
                     "num".to_string(),
-                    Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap())).unwrap(),
+                    Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap()), false).unwrap(),
                 ),
             ])),
         )
