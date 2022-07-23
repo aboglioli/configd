@@ -307,25 +307,21 @@ impl Prop {
         match self {
             Prop::Array(prop) => {
                 if let Value::Array(items) = value {
-                    return Value::Array(
-                        items.into_iter().map(|item| prop.populate(item)).collect(),
-                    );
+                    return Value::Array(items.iter().map(|item| prop.populate(item)).collect());
                 }
             }
             Prop::Object(props) => {
                 if let Value::Object(object) = value {
-                    let object = object.clone();
-
                     return Value::Object(
                         object
-                            .into_iter()
+                            .iter()
                             .map(|(key, item)| {
-                                let prop = props.get(&key);
+                                let prop = props.get(key);
 
                                 (
-                                    key,
-                                    prop.map(|prop| prop.populate(&item))
-                                        .unwrap_or_else(|| item),
+                                    key.to_string(),
+                                    prop.map(|prop| prop.populate(item))
+                                        .unwrap_or_else(|| item.clone()),
                                 )
                             })
                             .collect(),
