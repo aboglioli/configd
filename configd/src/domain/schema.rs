@@ -254,8 +254,8 @@ impl Schema {
         Ok(())
     }
 
-    pub fn populate_config_data(&self, config: &Config) -> Result<Value, Error> {
-        Ok(config.data().clone())
+    pub fn populate_config(&self, config: &Config) -> Value {
+        self.root_prop.populate(config.data())
     }
 }
 
@@ -374,6 +374,9 @@ mod tests {
 
         assert_eq!(config.id(), &config_id);
         assert_eq!(config.name(), "Config 01");
-        assert_eq!(config.data(), &Value::String("default".to_string()));
+        assert_eq!(config.data(), &Value::Null);
+
+        let data = schema.populate_config(&config);
+        assert_eq!(data, Value::String("default".to_string()));
     }
 }

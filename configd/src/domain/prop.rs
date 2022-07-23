@@ -302,6 +302,47 @@ impl Prop {
 
         diff
     }
+
+    pub fn populate(&self, value: &Value) -> Value {
+        match self {
+            Prop::Array(prop) => {
+                if let Value::Array(items) = value {
+                    return Value::Array(
+                        items.into_iter().map(|item| prop.populate(item)).collect(),
+                    );
+                }
+            }
+            Prop::Object(props) => {
+                if let Value::Object(object) = value {
+                    let object = object.clone();
+
+                    return Value::Object(
+                        object
+                            .into_iter()
+                            .map(|(key, item)| {
+                                let prop = props.get(&key);
+
+                                (
+                                    key,
+                                    prop.map(|prop| prop.populate(&item))
+                                        .unwrap_or_else(|| item),
+                                )
+                            })
+                            .collect(),
+                    );
+                }
+            }
+            _ => {}
+        }
+
+        if value == &Value::Null {
+            if let Some(default_value) = self.default_value() {
+                return default_value.clone();
+            }
+        }
+
+        value.clone()
+    }
 }
 
 #[cfg(test)]
@@ -539,5 +580,100 @@ mod tests {
                 ("$.arr_obj.0.prop".to_string(), vec![Reason::NotABool]),
             ])
         )
+    }
+
+    #[test]
+    fn populate() {
+        let prop = Prop::object(BTreeMap::from([
+            (
+                "str1".to_string(),
+                Prop::string(
+                    true,
+                    Some(Value::String("str_default".to_string())),
+                    None,
+                    None,
+                )
+                .unwrap(),
+            ),
+            (
+                "str2".to_string(),
+                Prop::string(true, None, None, None).unwrap(),
+            ),
+            (
+                "arr".to_string(),
+                Prop::array(Prop::int(false, Some(Value::Int(32)), None, None).unwrap()),
+            ),
+            (
+                "obj".to_string(),
+                Prop::object(BTreeMap::from([
+                    (
+                        "float1".to_string(),
+                        Prop::float(true, Some(Value::Float(4.64)), None, None).unwrap(),
+                    ),
+                    (
+                        "float2".to_string(),
+                        Prop::float(true, Some(Value::Float(3.23)), None, None).unwrap(),
+                    ),
+                ])),
+            ),
+        ]));
+
+        // Not in prop tree
+        assert_eq!(
+            prop.populate(&Value::String("str".to_string())),
+            Value::String("str".to_string()),
+        );
+
+        assert_eq!(prop.populate(&Value::Null), Value::Null);
+
+        // Populate all null properties
+        assert_eq!(
+            prop.populate(&Value::Object(BTreeMap::from([
+                ("str1".to_string(), Value::Null),
+                ("str2".to_string(), Value::Null),
+                (
+                    "arr".to_string(),
+                    Value::Array(vec![
+                        Value::Int(2),
+                        Value::Float(4.0),
+                        Value::Null,
+                        Value::Int(16),
+                        Value::Null,
+                    ]),
+                ),
+                (
+                    "obj".to_string(),
+                    Value::Object(BTreeMap::from([
+                        ("float1".to_string(), Value::Null),
+                        ("float2".to_string(), Value::Null),
+                        ("float3".to_string(), Value::Null),
+                        ("float4".to_string(), Value::Float(1.23)),
+                    ])),
+                )
+            ]))),
+            Value::Object(BTreeMap::from([
+                ("str1".to_string(), Value::String("str_default".to_string())),
+                ("str2".to_string(), Value::Null),
+                (
+                    "arr".to_string(),
+                    Value::Array(vec![
+                        Value::Int(2),
+                        Value::Float(4.0),
+                        Value::Int(32),
+                        Value::Int(16),
+                        Value::Int(32),
+                    ]),
+                ),
+                (
+                    "obj".to_string(),
+                    Value::Object(BTreeMap::from([
+                        ("float1".to_string(), Value::Float(4.64)),
+                        ("float2".to_string(), Value::Float(3.23)),
+                        ("float3".to_string(), Value::Null),
+                        ("float4".to_string(), Value::Float(1.23)),
+                    ])),
+                ),
+            ])),
+        );
     }
 }

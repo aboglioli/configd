@@ -65,7 +65,7 @@ impl GetConfig {
             let instance = cmd.instance.map(Id::new).transpose()?;
 
             let config = schema.get_config(&config_id, source, instance)?;
-            let data = schema.populate_config_data(&config)?;
+            let data = schema.populate_config(&config);
             let checksum = data.checksum();
 
             let res = GetConfigResponse {
