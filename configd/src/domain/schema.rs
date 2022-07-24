@@ -365,18 +365,21 @@ mod tests {
         )
         .unwrap();
 
+        // Create config
         let config_id = Id::new("config-01").unwrap();
 
         schema
             .add_config(config_id.clone(), "Config 01".to_string(), Value::Null)
             .unwrap();
 
+        // Get config
         let config = schema.get_config(&config_id, None, None).unwrap();
 
         assert_eq!(config.id(), &config_id);
         assert_eq!(config.name(), "Config 01");
         assert_eq!(config.data(), &Value::Null);
 
+        // Populate data
         let data = schema.populate_config(&config);
         assert_eq!(data, Value::String("default".to_string()));
     }

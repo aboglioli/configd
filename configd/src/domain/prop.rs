@@ -213,6 +213,13 @@ impl Prop {
         }
     }
 
+    pub fn split(&self) -> bool {
+        match self {
+            Prop::Int { split, .. } | Prop::Float { split, .. } => *split,
+            _ => false,
+        }
+    }
+
     pub fn validate(&self, value: &Value) -> Diff {
         self.validate_with_key(value, "$".to_string())
     }
@@ -348,7 +355,15 @@ impl Prop {
             value
         };
 
-        value.clone()
+        if split_by > 1 && self.split() {
+            match value {
+                Value::Int(num) => Value::Int(num / split_by),
+                Value::Float(num) => Value::Float(num / split_by as f64),
+                _ => value.clone(),
+            }
+        } else {
+            value.clone()
+        }
     }
 }
 
@@ -622,6 +637,14 @@ mod tests {
                 Prop::array(Prop::int(false, Some(Value::Int(32)), None, None, false).unwrap()),
             ),
             (
+                "split_int".to_string(),
+                Prop::int(false, None, None, None, true).unwrap(),
+            ),
+            (
+                "split_float".to_string(),
+                Prop::float(true, Some(Value::Float(3.75)), None, None, true).unwrap(),
+            ),
+            (
                 "obj".to_string(),
                 Prop::object(BTreeMap::from([
                     (
@@ -650,6 +673,8 @@ mod tests {
                 &Value::Object(BTreeMap::from([
                     ("str1".to_string(), Value::Null),
                     ("str2".to_string(), Value::Null),
+                    ("split_int".to_string(), Value::Int(10),),
+                    ("split_float".to_string(), Value::Null,),
                     (
                         "arr".to_string(),
                         Value::Array(vec![
@@ -670,11 +695,13 @@ mod tests {
                         ])),
                     )
                 ])),
-                1,
+                3,
             ),
             Value::Object(BTreeMap::from([
                 ("str1".to_string(), Value::String("str_default".to_string())),
                 ("str2".to_string(), Value::Null),
+                ("split_int".to_string(), Value::Int(3)),
+                ("split_float".to_string(), Value::Float(1.25)),
                 (
                     "arr".to_string(),
                     Value::Array(vec![
