@@ -3,10 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/aboglioli/configd/go-lib"
 )
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randSeq(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
 
 type Database struct {
 	Name string `json:"name"`
@@ -17,13 +28,16 @@ type Database struct {
 type MyConfig struct {
 	Env       string     `json:"env"`
 	Databases []Database `json:"databases"`
+	RateLimit float64    `json:"rate_limit"`
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	client, err := configd.NewConfigdClient(
 		"http://localhost:8080",
 		"Example",
-		"instance#01",
+		randSeq(10),
 	)
 	if err != nil {
 		panic(err)
@@ -39,9 +53,12 @@ func main() {
 			return err
 		}
 
-		fmt.Printf("#####\n")
-		fmt.Printf("· Name: %s\n", c.Name)
-		fmt.Printf("· Valid: %t\n", c.Valid)
+		valid := "INVALID"
+		if c.Valid {
+			valid = "VALID"
+		}
+
+		fmt.Printf("##### %s (%s) - %s\n", c.Name, c.Id, valid)
 		fmt.Printf("· Checksum: %s\n", c.Checksum)
 		fmt.Printf("· Accesses: %d\n", len(c.Accesses))
 		fmt.Printf("· Updated at: %s\n", c.UpdatedAt)
@@ -51,10 +68,10 @@ func main() {
 		return nil
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	// ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 
 	if err := client.GetConfig(
-		ctx,
+		context.Background(),
 		"custom-schema",
 		"dev",
 		2*time.Second,

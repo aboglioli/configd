@@ -27,6 +27,8 @@ type ConfigdClient struct {
 
 	httpClient *http.Client
 	errCh      chan error
+
+	lastConfig *Config
 }
 
 func NewConfigdClient(
@@ -52,6 +54,7 @@ func NewConfigdClient(
 		instance,
 		http.DefaultClient,
 		make(chan error),
+		nil,
 	}, nil
 }
 
@@ -91,6 +94,15 @@ func (c *ConfigdClient) GetConfig(
 					c.notifyErr(err)
 					return
 				}
+
+				if c.lastConfig != nil {
+					if c.lastConfig.Checksum == config.Checksum &&
+						c.lastConfig.Version == config.Version {
+						continue
+					}
+				}
+
+				c.lastConfig = config
 
 				if err := configHandler(config, err); err != nil {
 					c.notifyErr(err)
