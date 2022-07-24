@@ -35,6 +35,8 @@ struct JsonProp {
     interval: Option<JsonPropInterval>,
     #[serde(skip_serializing_if = "Option::is_none")]
     regex: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    split: Option<bool>,
 }
 
 impl TryFrom<JsonValue> for Prop {
@@ -58,12 +60,20 @@ impl TryFrom<JsonValue> for Prop {
 
                     return match prop.kind {
                         JsonPropKind::Bool => Prop::bool(prop.required, default_value),
-                        JsonPropKind::Int => {
-                            Prop::int(prop.required, default_value, allowed_values, interval)
-                        }
-                        JsonPropKind::Float => {
-                            Prop::float(prop.required, default_value, allowed_values, interval)
-                        }
+                        JsonPropKind::Int => Prop::int(
+                            prop.required,
+                            default_value,
+                            allowed_values,
+                            interval,
+                            prop.split.unwrap_or(false),
+                        ),
+                        JsonPropKind::Float => Prop::float(
+                            prop.required,
+                            default_value,
+                            allowed_values,
+                            interval,
+                            prop.split.unwrap_or(false),
+                        ),
                         JsonPropKind::String => {
                             Prop::string(prop.required, default_value, allowed_values, prop.regex)
                         }
@@ -106,6 +116,7 @@ impl TryFrom<Prop> for JsonValue {
                     allowed_values: None,
                     interval: None,
                     regex: None,
+                    split: None,
                 };
 
                 let json_value = serde_json::to_value(&json_prop).map_err(Error::Serde)?;
@@ -120,6 +131,7 @@ impl TryFrom<Prop> for JsonValue {
                 default_value,
                 allowed_values,
                 interval,
+                split,
             } => {
                 let json_prop = JsonProp {
                     kind: JsonPropKind::Int,
@@ -132,6 +144,7 @@ impl TryFrom<Prop> for JsonValue {
                         max: interval.max(),
                     }),
                     regex: None,
+                    split: Some(split),
                 };
 
                 let json_value = serde_json::to_value(&json_prop).map_err(Error::Serde)?;
@@ -146,6 +159,7 @@ impl TryFrom<Prop> for JsonValue {
                 default_value,
                 allowed_values,
                 interval,
+                split,
             } => {
                 let json_prop = JsonProp {
                     kind: JsonPropKind::Float,
@@ -158,6 +172,7 @@ impl TryFrom<Prop> for JsonValue {
                         max: interval.max(),
                     }),
                     regex: None,
+                    split: Some(split),
                 };
 
                 let json_value = serde_json::to_value(&json_prop).map_err(Error::Serde)?;
@@ -181,6 +196,7 @@ impl TryFrom<Prop> for JsonValue {
                         .map(|values| values.into_iter().map(JsonValue::from).collect()),
                     interval: None,
                     regex,
+                    split: None,
                 };
 
                 let json_value = serde_json::to_value(&json_prop).map_err(Error::Serde)?;
@@ -278,7 +294,14 @@ mod tests {
                         }
                     }
                 }
-            ]
+            ],
+            "split_num": {
+                "$schema": {
+                    "kind": "int",
+                    "required": false,
+                    "split": true
+                }
+            }
         }"#
         .to_string();
         let value: JsonValue = serde_json::from_str(&json).unwrap();
@@ -308,6 +331,7 @@ mod tests {
                         Some(Value::Int(3)),
                         None,
                         Some(Interval::new(2, 10).unwrap()),
+                        false,
                     )
                     .unwrap(),
                 ),
@@ -345,6 +369,7 @@ mod tests {
                                 Some(Value::Int(1234)),
                                 None,
                                 Some(Interval::new(1024, None).unwrap()),
+                                false,
                             )
                             .unwrap(),
                         )
@@ -353,12 +378,19 @@ mod tests {
                 (
                     "extra_services".to_string(),
                     Prop::array(Prop::object(BTreeMap::from([
-                        ("id".to_string(), Prop::int(true, None, None, None).unwrap()),
+                        (
+                            "id".to_string(),
+                            Prop::int(true, None, None, None, false).unwrap()
+                        ),
                         (
                             "name".to_string(),
                             Prop::string(false, None, None, None).unwrap(),
                         ),
                     ])),),
+                ),
+                (
+                    "split_num".to_string(),
+                    Prop::int(false, None, None, None, true,).unwrap(),
                 )
             ])),
         );
@@ -388,6 +420,7 @@ mod tests {
                     Some(Value::Int(3)),
                     None,
                     Some(Interval::new(2, 10).unwrap()),
+                    false,
                 )
                 .unwrap(),
             ),
@@ -425,6 +458,7 @@ mod tests {
                             Some(Value::Int(1234)),
                             None,
                             Some(Interval::new(1024, None).unwrap()),
+                            false,
                         )
                         .unwrap(),
                     ),
@@ -433,12 +467,19 @@ mod tests {
             (
                 "extra_services".to_string(),
                 Prop::array(Prop::object(BTreeMap::from([
-                    ("id".to_string(), Prop::int(true, None, None, None).unwrap()),
+                    (
+                        "id".to_string(),
+                        Prop::int(true, None, None, None, false).unwrap(),
+                    ),
                     (
                         "name".to_string(),
                         Prop::string(false, None, None, None).unwrap(),
                     ),
                 ]))),
+            ),
+            (
+                "split_num".to_string(),
+                Prop::int(false, None, None, None, true).unwrap(),
             ),
         ]));
 
@@ -463,7 +504,8 @@ mod tests {
                         "interval": {
                             "min": 2.0,
                             "max": 10.0
-                        }
+                        },
+                        "split": false
                     }
                 },
                 "database_urls": [
@@ -494,7 +536,8 @@ mod tests {
                             "default_value": 1234,
                             "interval": {
                                 "min": 1024.0
-                            }
+                            },
+                            "split": false
                         }
                     }
                 },
@@ -503,7 +546,8 @@ mod tests {
                         "id": {
                             "$schema": {
                                 "kind": "int",
-                                "required": true
+                                "required": true,
+                                "split": false
                             }
                         },
                         "name": {
@@ -513,7 +557,14 @@ mod tests {
                             }
                         }
                     }
-                ]
+                ],
+                "split_num": {
+                    "$schema": {
+                        "kind": "int",
+                        "required": false,
+                        "split": true
+                    }
+                }
             }"#,
             )
             .unwrap(),

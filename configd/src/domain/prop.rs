@@ -21,12 +21,14 @@ pub enum Prop {
         default_value: Option<Value>,
         allowed_values: Option<Vec<Value>>,
         interval: Option<Interval>,
+        split: bool,
     },
     Float {
         required: bool,
         default_value: Option<Value>,
         allowed_values: Option<Vec<Value>>,
         interval: Option<Interval>,
+        split: bool,
     },
     String {
         required: bool,
@@ -60,6 +62,7 @@ impl Prop {
         default_value: Option<Value>,
         allowed_values: Option<Vec<Value>>,
         interval: Option<Interval>,
+        split: bool,
     ) -> Result<Prop, Error> {
         if let Some(default_value) = &default_value {
             if default_value.kind() != Kind::Int {
@@ -86,6 +89,7 @@ impl Prop {
             default_value,
             allowed_values,
             interval,
+            split,
         })
     }
 
@@ -94,6 +98,7 @@ impl Prop {
         default_value: Option<Value>,
         allowed_values: Option<Vec<Value>>,
         interval: Option<Interval>,
+        split: bool,
     ) -> Result<Prop, Error> {
         if let Some(default_value) = &default_value {
             if default_value.kind() != Kind::Float {
@@ -120,6 +125,7 @@ impl Prop {
             default_value,
             allowed_values,
             interval,
+            split,
         })
     }
 
@@ -207,6 +213,13 @@ impl Prop {
         }
     }
 
+    pub fn split(&self) -> bool {
+        match self {
+            Prop::Int { split, .. } | Prop::Float { split, .. } => *split,
+            _ => false,
+        }
+    }
+
     pub fn validate(&self, value: &Value) -> Diff {
         self.validate_with_key(value, "$".to_string())
     }
@@ -215,7 +228,7 @@ impl Prop {
         let mut diff = Diff::new(key);
 
         // Null values
-        if value == &Value::Null {
+        if value.is_null() {
             if self.is_required() && self.default_value().is_none() {
                 diff.add(Reason::NullValue, None);
             }
@@ -303,11 +316,16 @@ impl Prop {
         diff
     }
 
-    pub fn populate(&self, value: &Value) -> Value {
+    pub fn populate(&self, value: &Value, split_by: i64) -> Value {
         match self {
             Prop::Array(prop) => {
                 if let Value::Array(items) = value {
-                    return Value::Array(items.iter().map(|item| prop.populate(item)).collect());
+                    return Value::Array(
+                        items
+                            .iter()
+                            .map(|item| prop.populate(item, split_by))
+                            .collect(),
+                    );
                 }
             }
             Prop::Object(props) => {
@@ -320,7 +338,7 @@ impl Prop {
 
                                 (
                                     key.to_string(),
-                                    prop.map(|prop| prop.populate(item))
+                                    prop.map(|prop| prop.populate(item, split_by))
                                         .unwrap_or_else(|| item.clone()),
                                 )
                             })
@@ -331,13 +349,21 @@ impl Prop {
             _ => {}
         }
 
-        if value == &Value::Null {
-            if let Some(default_value) = self.default_value() {
-                return default_value.clone();
-            }
-        }
+        let value = if value.is_null() {
+            self.default_value().unwrap_or(value)
+        } else {
+            value
+        };
 
-        value.clone()
+        if split_by > 1 && self.split() {
+            match value {
+                Value::Int(num) => Value::Int(num / split_by),
+                Value::Float(num) => Value::Float(num / split_by as f64),
+                _ => value.clone(),
+            }
+        } else {
+            value.clone()
+        }
     }
 }
 
@@ -355,7 +381,7 @@ mod tests {
             .is_empty());
 
         // Required
-        assert!(Prop::int(false, None, None, None)
+        assert!(Prop::int(false, None, None, None, false)
             .unwrap()
             .validate(&Value::Null)
             .is_empty());
@@ -363,17 +389,21 @@ mod tests {
             .unwrap()
             .validate(&Value::Null)
             .is_empty());
-        assert!(Prop::array(Prop::int(true, None, None, None).unwrap())
-            .validate(&Value::Array(vec![Value::Int(12)]))
-            .is_empty());
-        assert!(Prop::array(Prop::int(false, None, None, None).unwrap())
-            .validate(&Value::Array(vec![Value::Null]))
-            .is_empty());
-        assert!(!Prop::int(true, None, None, None)
+        assert!(
+            Prop::array(Prop::int(true, None, None, None, false).unwrap())
+                .validate(&Value::Array(vec![Value::Int(12)]))
+                .is_empty()
+        );
+        assert!(
+            Prop::array(Prop::int(false, None, None, None, false).unwrap())
+                .validate(&Value::Array(vec![Value::Null]))
+                .is_empty()
+        );
+        assert!(!Prop::int(true, None, None, None, false)
             .unwrap()
             .validate(&Value::Null)
             .is_empty());
-        assert!(Prop::int(true, Some(Value::Int(32)), None, None)
+        assert!(Prop::int(true, Some(Value::Int(32)), None, None, false)
             .unwrap()
             .validate(&Value::Null)
             .is_empty());
@@ -381,12 +411,16 @@ mod tests {
             .unwrap()
             .validate(&Value::Null)
             .is_empty());
-        assert!(!Prop::array(Prop::int(true, None, None, None).unwrap())
-            .validate(&Value::Null)
-            .is_empty());
-        assert!(!Prop::array(Prop::int(true, None, None, None).unwrap())
-            .validate(&Value::Array(vec![Value::Null]))
-            .is_empty());
+        assert!(
+            !Prop::array(Prop::int(true, None, None, None, false).unwrap())
+                .validate(&Value::Null)
+                .is_empty()
+        );
+        assert!(
+            !Prop::array(Prop::int(true, None, None, None, false).unwrap())
+                .validate(&Value::Array(vec![Value::Null]))
+                .is_empty()
+        );
 
         // Allowed values
         assert!(Prop::string(
@@ -431,13 +465,13 @@ mod tests {
 
         // Interval
         assert!(
-            Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap()))
+            Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap()), false)
                 .unwrap()
                 .validate(&Value::Int(3))
                 .is_empty()
         );
         assert!(
-            !Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap()))
+            !Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap()), false)
                 .unwrap()
                 .validate(&Value::Int(6))
                 .is_empty()
@@ -496,7 +530,8 @@ mod tests {
                     ("prop1".to_string(), Prop::bool(true, None).unwrap()),
                     (
                         "prop2".to_string(),
-                        Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap())).unwrap(),
+                        Prop::int(true, None, None, Some(Interval::new(1, 5).unwrap()), false)
+                            .unwrap(),
                     ),
                     (
                         "prop3".to_string(),
@@ -505,6 +540,7 @@ mod tests {
                             None,
                             Some(vec![Value::Float(1.0), Value::Float(3.0)]),
                             None,
+                            false,
                         )
                         .unwrap(),
                     ),
@@ -515,6 +551,7 @@ mod tests {
                             None,
                             Some(vec![Value::Float(1.0), Value::Float(3.0)]),
                             Some(Interval::new(1, 5).unwrap()),
+                            false,
                         )
                         .unwrap(),
                     ),
@@ -597,18 +634,26 @@ mod tests {
             ),
             (
                 "arr".to_string(),
-                Prop::array(Prop::int(false, Some(Value::Int(32)), None, None).unwrap()),
+                Prop::array(Prop::int(false, Some(Value::Int(32)), None, None, false).unwrap()),
+            ),
+            (
+                "split_int".to_string(),
+                Prop::int(false, None, None, None, true).unwrap(),
+            ),
+            (
+                "split_float".to_string(),
+                Prop::float(true, Some(Value::Float(3.75)), None, None, true).unwrap(),
             ),
             (
                 "obj".to_string(),
                 Prop::object(BTreeMap::from([
                     (
                         "float1".to_string(),
-                        Prop::float(true, Some(Value::Float(4.64)), None, None).unwrap(),
+                        Prop::float(true, Some(Value::Float(4.64)), None, None, false).unwrap(),
                     ),
                     (
                         "float2".to_string(),
-                        Prop::float(true, Some(Value::Float(3.23)), None, None).unwrap(),
+                        Prop::float(true, Some(Value::Float(3.23)), None, None, false).unwrap(),
                     ),
                 ])),
             ),
@@ -616,40 +661,47 @@ mod tests {
 
         // Not in prop tree
         assert_eq!(
-            prop.populate(&Value::String("str".to_string())),
+            prop.populate(&Value::String("str".to_string()), 1),
             Value::String("str".to_string()),
         );
 
-        assert_eq!(prop.populate(&Value::Null), Value::Null);
+        assert_eq!(prop.populate(&Value::Null, 1), Value::Null);
 
         // Populate all null properties
         assert_eq!(
-            prop.populate(&Value::Object(BTreeMap::from([
-                ("str1".to_string(), Value::Null),
-                ("str2".to_string(), Value::Null),
-                (
-                    "arr".to_string(),
-                    Value::Array(vec![
-                        Value::Int(2),
-                        Value::Float(4.0),
-                        Value::Null,
-                        Value::Int(16),
-                        Value::Null,
-                    ]),
-                ),
-                (
-                    "obj".to_string(),
-                    Value::Object(BTreeMap::from([
-                        ("float1".to_string(), Value::Null),
-                        ("float2".to_string(), Value::Null),
-                        ("float3".to_string(), Value::Null),
-                        ("float4".to_string(), Value::Float(1.23)),
-                    ])),
-                )
-            ]))),
+            prop.populate(
+                &Value::Object(BTreeMap::from([
+                    ("str1".to_string(), Value::Null),
+                    ("str2".to_string(), Value::Null),
+                    ("split_int".to_string(), Value::Int(10),),
+                    ("split_float".to_string(), Value::Null,),
+                    (
+                        "arr".to_string(),
+                        Value::Array(vec![
+                            Value::Int(2),
+                            Value::Float(4.0),
+                            Value::Null,
+                            Value::Int(16),
+                            Value::Null,
+                        ]),
+                    ),
+                    (
+                        "obj".to_string(),
+                        Value::Object(BTreeMap::from([
+                            ("float1".to_string(), Value::Null),
+                            ("float2".to_string(), Value::Null),
+                            ("float3".to_string(), Value::Null),
+                            ("float4".to_string(), Value::Float(1.23)),
+                        ])),
+                    )
+                ])),
+                3,
+            ),
             Value::Object(BTreeMap::from([
                 ("str1".to_string(), Value::String("str_default".to_string())),
                 ("str2".to_string(), Value::Null),
+                ("split_int".to_string(), Value::Int(3)),
+                ("split_float".to_string(), Value::Float(1.25)),
                 (
                     "arr".to_string(),
                     Value::Array(vec![
