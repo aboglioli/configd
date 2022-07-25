@@ -230,10 +230,17 @@ pub async fn update_config(
 pub async fn change_config_password(
     Path((schema_id, config_id)): Path<(String, String)>,
     Json(mut cmd): Json<ChangeConfigPasswordCommand>,
+    headers: header::HeaderMap,
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
     cmd.schema_id = schema_id;
     cmd.config_id = config_id;
+    cmd.old_password = headers
+        .get("X-Configd-Password")
+        .map(|header| header.to_str())
+        .transpose()
+        .unwrap_or(None)
+        .map(|header| header.to_string());
 
     let serv = ChangeConfigPassword::new(
         container.event_publisher.clone(),

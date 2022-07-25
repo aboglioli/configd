@@ -10,6 +10,7 @@ pub struct ChangeConfigPasswordCommand {
     pub schema_id: String,
     #[serde(skip_deserializing)]
     pub config_id: String,
+    #[serde(skip_deserializing)]
     pub old_password: Option<String>,
     pub new_password: String,
 }
