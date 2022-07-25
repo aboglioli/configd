@@ -6,8 +6,8 @@ use core_lib::{
 use std::collections::HashMap;
 
 use crate::domain::{
-    Config, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id, Page, Prop,
-    SchemaCreated, SchemaDeleted, SchemaRootPropChanged, Value,
+    Config, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id, Page,
+    Password, Prop, SchemaCreated, SchemaDeleted, SchemaRootPropChanged, Value,
 };
 
 #[async_trait]
@@ -110,6 +110,7 @@ impl Schema {
         self.event_collector.drain()
     }
 
+    // Mutations
     pub fn change_root_prop(&mut self, prop: Prop) -> Result<(), Error> {
         self.root_prop = prop;
 
@@ -138,8 +139,13 @@ impl Schema {
         id: &Id,
         source: Option<Id>,
         instance: Option<Id>,
+        password: Option<&Password>,
     ) -> Result<Config, Error> {
         if let Some(config) = self.configs.get_mut(id) {
+            if !config.can_access(password) {
+                return Err(Error::Unauthorized);
+            }
+
             self.event_collector
                 .record(ConfigAccessed {
                     id: config.id().to_string(),
@@ -161,7 +167,18 @@ impl Schema {
             .ok_or_else(|| Error::ConfigNotFound(id.clone()))
     }
 
-    pub fn add_config(&mut self, id: Id, name: String, data: Value) -> Result<(), Error> {
+    pub fn populate_config(&self, config: &Config) -> Value {
+        self.root_prop
+            .populate(config.data(), config.accesses().len() as i64)
+    }
+
+    pub fn add_config(
+        &mut self,
+        id: Id,
+        name: String,
+        data: Value,
+        password: Option<Password>,
+    ) -> Result<(), Error> {
         if self.configs.contains_key(&id) {
             return Err(Error::ConfigAlreadyExists(id));
         }
@@ -171,7 +188,7 @@ impl Schema {
             return Err(Error::InvalidConfig(diff));
         }
 
-        let config = Config::create(id, name, data, diff.is_empty())?;
+        let config = Config::create(id, name, data, diff.is_empty(), password)?;
 
         self.event_collector
             .record(ConfigCreated {
@@ -191,8 +208,17 @@ impl Schema {
         Ok(())
     }
 
-    pub fn update_config(&mut self, id: &Id, data: Value) -> Result<(), Error> {
+    pub fn update_config(
+        &mut self,
+        id: &Id,
+        data: Value,
+        password: Option<&Password>,
+    ) -> Result<(), Error> {
         if let Some(config) = self.configs.get_mut(id) {
+            if !config.can_access(password) {
+                return Err(Error::Unauthorized);
+            }
+
             let diff = self.root_prop.validate(&data);
             if !diff.is_empty() {
                 return Err(Error::InvalidConfig(diff));
@@ -218,8 +244,12 @@ impl Schema {
         Err(Error::ConfigNotFound(id.clone()))
     }
 
-    pub fn delete_config(&mut self, id: &Id) -> Result<(), Error> {
-        if !self.configs.contains_key(id) {
+    pub fn delete_config(&mut self, id: &Id, password: Option<&Password>) -> Result<(), Error> {
+        if let Some(config) = self.configs.get(id) {
+            if !config.can_access(password) {
+                return Err(Error::Unauthorized);
+            }
+        } else {
             return Err(Error::ConfigNotFound(id.clone()));
         }
 
@@ -252,11 +282,6 @@ impl Schema {
         self.timestamps = self.timestamps.delete();
 
         Ok(())
-    }
-
-    pub fn populate_config(&self, config: &Config) -> Value {
-        self.root_prop
-            .populate(config.data(), config.accesses().len() as i64)
     }
 }
 
@@ -369,11 +394,16 @@ mod tests {
         let config_id = Id::new("config-01").unwrap();
 
         schema
-            .add_config(config_id.clone(), "Config 01".to_string(), Value::Null)
+            .add_config(
+                config_id.clone(),
+                "Config 01".to_string(),
+                Value::Null,
+                None,
+            )
             .unwrap();
 
         // Get config
-        let config = schema.get_config(&config_id, None, None).unwrap();
+        let config = schema.get_config(&config_id, None, None, None).unwrap();
 
         assert_eq!(config.id(), &config_id);
         assert_eq!(config.name(), "Config 01");

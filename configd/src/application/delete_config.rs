@@ -2,7 +2,7 @@ use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, SchemaRepository};
+use crate::domain::{Error, Id, Password, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct DeleteConfigCommand {
@@ -10,6 +10,8 @@ pub struct DeleteConfigCommand {
     pub schema_id: String,
     #[serde(skip_deserializing)]
     pub config_id: String,
+    #[serde(skip_deserializing)]
+    pub password: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -39,8 +41,9 @@ impl DeleteConfig {
 
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::new(cmd.config_id)?;
+            let password = cmd.password.map(Password::new).transpose()?;
 
-            schema.delete_config(&config_id)?;
+            schema.delete_config(&config_id, password.as_ref())?;
 
             self.schema_repository.save(&mut schema).await?;
 

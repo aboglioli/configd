@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, SchemaRepository};
+use crate::domain::{Error, Id, Password, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct UpdateConfigCommand {
@@ -12,6 +12,8 @@ pub struct UpdateConfigCommand {
     #[serde(skip_deserializing)]
     pub config_id: String,
     pub data: JsonValue,
+    #[serde(skip_deserializing)]
+    pub password: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -41,8 +43,9 @@ impl UpdateConfig {
 
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::new(cmd.config_id)?;
+            let password = cmd.password.map(Password::new).transpose()?;
 
-            schema.update_config(&config_id, cmd.data.into())?;
+            schema.update_config(&config_id, cmd.data.into(), password.as_ref())?;
 
             self.schema_repository.save(&mut schema).await?;
 
