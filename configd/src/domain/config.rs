@@ -188,7 +188,7 @@ impl Config {
 
         access_indexes_to_remove
             .into_iter()
-            .rev() // reverse to not mutate indexes
+            .rev() // reverse to not re-calculate indexes
             .map(|i| self.accesses.remove(i))
             .collect()
     }

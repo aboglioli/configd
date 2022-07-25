@@ -140,27 +140,27 @@ impl Schema {
         access: Access,
         password: Option<&Password>,
     ) -> Result<Config, Error> {
-        if let Some(config) = self.configs.get_mut(id) {
-            if !config.can_access(password) {
-                return Err(Error::Unauthorized);
-            }
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
 
-            self.event_collector
-                .record(ConfigAccessed {
-                    id: config.id().to_string(),
-                    schema_id: self.id.to_string(),
-                    source: access.source().to_string(),
-                    instance: access.instance().to_string(),
-                })
-                .map_err(Error::Core)?;
-
-            config.register_access(access);
+        if !config.can_access(password) {
+            return Err(Error::Unauthorized);
         }
 
-        self.configs
-            .get(id)
-            .map(Clone::clone)
-            .ok_or_else(|| Error::ConfigNotFound(id.clone()))
+        self.event_collector
+            .record(ConfigAccessed {
+                id: config.id().to_string(),
+                schema_id: self.id.to_string(),
+                source: access.source().to_string(),
+                instance: access.instance().to_string(),
+            })
+            .map_err(Error::Core)?;
+
+        config.register_access(access);
+
+        Ok(config.clone())
     }
 
     pub fn populate_config(&self, config: &Config) -> Value {
@@ -210,34 +210,35 @@ impl Schema {
         data: Value,
         password: Option<&Password>,
     ) -> Result<(), Error> {
-        if let Some(config) = self.configs.get_mut(id) {
-            if !config.can_access(password) {
-                return Err(Error::Unauthorized);
-            }
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
 
-            let diff = self.root_prop.validate(&data);
-            if !diff.is_empty() {
-                return Err(Error::InvalidConfig(diff));
-            }
-
-            config.change_data(data, diff.is_empty())?;
-
-            self.event_collector
-                .record(ConfigDataChanged {
-                    id: config.id().to_string(),
-                    schema_id: self.id.to_string(),
-                    data: config.data().into(),
-                    valid: config.is_valid(),
-                })
-                .map_err(Error::Core)?;
-
-            self.timestamps = self.timestamps.update();
-            self.version = self.version.incr();
-
-            return Ok(());
+        if !config.can_access(password) {
+            return Err(Error::Unauthorized);
         }
 
-        Err(Error::ConfigNotFound(id.clone()))
+        let diff = self.root_prop.validate(&data);
+        if !diff.is_empty() {
+            return Err(Error::InvalidConfig(diff));
+        }
+
+        config.change_data(data, diff.is_empty())?;
+
+        self.event_collector
+            .record(ConfigDataChanged {
+                id: config.id().to_string(),
+                schema_id: self.id.to_string(),
+                data: config.data().into(),
+                valid: config.is_valid(),
+            })
+            .map_err(Error::Core)?;
+
+        self.timestamps = self.timestamps.update();
+        self.version = self.version.incr();
+
+        Ok(())
     }
 
     pub fn change_config_password(
@@ -246,13 +247,14 @@ impl Schema {
         old_password: Option<&Password>,
         new_password: Password,
     ) -> Result<(), Error> {
-        if let Some(config) = self.configs.get_mut(id) {
-            config.change_password(old_password, new_password)?;
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
 
-            return Ok(());
-        }
+        config.change_password(old_password, new_password)?;
 
-        Err(Error::ConfigNotFound(id.clone()))
+        Ok(())
     }
 
     pub fn delete_config_password(
@@ -260,22 +262,35 @@ impl Schema {
         id: &Id,
         password: Option<&Password>,
     ) -> Result<(), Error> {
-        if let Some(config) = self.configs.get_mut(id) {
-            config.delete_password(password)?;
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
 
-            return Ok(());
-        }
+        config.delete_password(password)?;
 
-        Err(Error::ConfigNotFound(id.clone()))
+        Ok(())
+    }
+
+    pub fn clean_config_accesses(&mut self, id: &Id) -> Result<(), Error> {
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
+
+        let _removed_accesses = config.clean_old_accesses();
+
+        Ok(())
     }
 
     pub fn delete_config(&mut self, id: &Id, password: Option<&Password>) -> Result<(), Error> {
-        if let Some(config) = self.configs.get(id) {
-            if !config.can_access(password) {
-                return Err(Error::Unauthorized);
-            }
-        } else {
-            return Err(Error::ConfigNotFound(id.clone()));
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
+
+        if !config.can_access(password) {
+            return Err(Error::Unauthorized);
         }
 
         self.configs.remove(id);
