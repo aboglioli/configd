@@ -5,45 +5,50 @@ use std::sync::Arc;
 use crate::domain::{Error, Id, Password, SchemaRepository};
 
 #[derive(Deserialize)]
-pub struct DeleteConfigCommand {
+pub struct ChangeConfigPasswordCommand {
     #[serde(skip_deserializing)]
     pub schema_id: String,
     #[serde(skip_deserializing)]
     pub config_id: String,
     #[serde(skip_deserializing)]
-    pub password: Option<String>,
+    pub old_password: Option<String>,
+    pub new_password: String,
 }
 
 #[derive(Serialize)]
-pub struct DeleteConfigResponse {
+pub struct ChangeConfigPasswordResponse {
     pub schema_id: String,
     pub config_id: String,
 }
 
-pub struct DeleteConfig {
+pub struct ChangeConfigPassword {
     event_publisher: Arc<dyn Publisher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
-impl DeleteConfig {
+impl ChangeConfigPassword {
     pub fn new(
         event_publisher: Arc<dyn Publisher + Sync + Send>,
         schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
-    ) -> DeleteConfig {
-        DeleteConfig {
+    ) -> ChangeConfigPassword {
+        ChangeConfigPassword {
             event_publisher,
             schema_repository,
         }
     }
 
-    pub async fn exec(&self, cmd: DeleteConfigCommand) -> Result<DeleteConfigResponse, Error> {
+    pub async fn exec(
+        &self,
+        cmd: ChangeConfigPasswordCommand,
+    ) -> Result<ChangeConfigPasswordResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::new(cmd.config_id)?;
-            let password = cmd.password.map(Password::new).transpose()?;
+            let old_password = cmd.old_password.map(Password::new).transpose()?;
+            let new_password = Password::new(cmd.new_password)?;
 
-            schema.delete_config(&config_id, password.as_ref())?;
+            schema.change_config_password(&config_id, old_password.as_ref(), new_password)?;
 
             self.schema_repository.save(&mut schema).await?;
 
@@ -52,7 +57,7 @@ impl DeleteConfig {
                 .await
                 .map_err(Error::Core)?;
 
-            return Ok(DeleteConfigResponse {
+            return Ok(ChangeConfigPasswordResponse {
                 schema_id: schema_id.to_string(),
                 config_id: config_id.to_string(),
             });

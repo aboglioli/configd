@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, SchemaRepository};
+use crate::domain::{Error, Id, Password, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct CreateConfigCommand {
@@ -11,6 +11,7 @@ pub struct CreateConfigCommand {
     pub schema_id: String,
     pub name: String,
     pub data: JsonValue,
+    pub password: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -40,8 +41,9 @@ impl CreateConfig {
 
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             let config_id = Id::slug(&cmd.name)?;
+            let password = cmd.password.map(Password::new).transpose()?;
 
-            schema.add_config(config_id.clone(), cmd.name, cmd.data.into())?;
+            schema.add_config(config_id.clone(), cmd.name, cmd.data.into(), password)?;
 
             self.schema_repository.save(&mut schema).await?;
 
