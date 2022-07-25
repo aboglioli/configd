@@ -8,6 +8,7 @@ anyhow = "1"
 async-trait = "0.1"
 axum = "0.5"
 axum-macros = "0.2"
+bcrypt = "0.13"
 chrono = { version = "0.4", features = ["serde"] }
 core-lib = "0.1"
 hex = "0.4"

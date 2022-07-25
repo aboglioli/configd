@@ -30,6 +30,7 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         let status = match self {
             Error::SchemaNotFound(_) | Error::ConfigNotFound(_) => StatusCode::NOT_FOUND,
+            Error::Unauthorized => StatusCode::UNAUTHORIZED,
             Error::EmptyId
             | Error::EmptyName
             | Error::EmptyInterval
@@ -171,6 +172,12 @@ pub async fn get_config_by_id(
                 .transpose()
                 .unwrap_or(None)
                 .map(|header| header.to_string()),
+            password: headers
+                .get("X-Configd-Password")
+                .map(|header| header.to_str())
+                .transpose()
+                .unwrap_or(None)
+                .map(|header| header.to_string()),
         })
         .await?;
 
@@ -197,10 +204,17 @@ pub async fn create_config(
 pub async fn update_config(
     Path((schema_id, config_id)): Path<(String, String)>,
     Json(mut cmd): Json<UpdateConfigCommand>,
+    headers: header::HeaderMap,
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
     cmd.schema_id = schema_id;
     cmd.config_id = config_id;
+    cmd.password = headers
+        .get("X-Configd-Password")
+        .map(|header| header.to_str())
+        .transpose()
+        .unwrap_or(None)
+        .map(|header| header.to_string());
 
     let serv = UpdateConfig::new(
         container.event_publisher.clone(),
@@ -214,11 +228,18 @@ pub async fn update_config(
 
 pub async fn delete_config(
     Path((schema_id, config_id)): Path<(String, String)>,
+    headers: header::HeaderMap,
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
     let cmd = DeleteConfigCommand {
         schema_id,
         config_id,
+        password: headers
+            .get("X-Configd-Password")
+            .map(|header| header.to_str())
+            .transpose()
+            .unwrap_or(None)
+            .map(|header| header.to_string()),
     };
 
     let serv = DeleteConfig::new(
