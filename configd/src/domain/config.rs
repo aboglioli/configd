@@ -156,15 +156,11 @@ impl Config {
         Ok(())
     }
 
-    pub fn register_access(&mut self, source: Id, instance: Id) {
-        if let Some(access) = self
-            .accesses
-            .iter_mut()
-            .find(|access| access.source() == &source && access.instance() == &instance)
-        {
+    pub fn register_access(&mut self, access: Access) {
+        if let Some(access) = self.accesses.iter_mut().find(|a| a.equals(&access)) {
             *access = access.ping();
         } else {
-            self.accesses.push(Access::create(source, instance));
+            self.accesses.push(access);
         }
 
         self.accesses
@@ -207,32 +203,32 @@ mod tests {
         .unwrap();
 
         // New sources
-        config.register_access(
+        config.register_access(Access::create(
             Id::new("Source 1").unwrap(),
             Id::new("instance#01").unwrap(),
-        );
-        config.register_access(
+        ));
+        config.register_access(Access::create(
             Id::new("Source 2").unwrap(),
             Id::new("instance#01").unwrap(),
-        );
+        ));
 
         assert_eq!(config.accesses()[0].source().value(), "Source 2");
         assert_eq!(config.accesses()[1].source().value(), "Source 1");
 
         // Existing source
-        config.register_access(
+        config.register_access(Access::create(
             Id::new("Source 1").unwrap(),
             Id::new("instance#01").unwrap(),
-        );
+        ));
 
         assert_eq!(config.accesses()[0].source().value(), "Source 1");
         assert_eq!(config.accesses()[1].source().value(), "Source 2");
 
         // New source
-        config.register_access(
+        config.register_access(Access::create(
             Id::new("Source 3").unwrap(),
             Id::new("instance#01").unwrap(),
-        );
+        ));
 
         assert_eq!(config.accesses().len(), 3);
         assert_eq!(config.accesses()[0].source().value(), "Source 3");
@@ -241,22 +237,22 @@ mod tests {
 
         // Save last accesses only
 
-        config.register_access(
+        config.register_access(Access::create(
             Id::new("Source 4").unwrap(),
             Id::new("instance#01").unwrap(),
-        );
-        config.register_access(
+        ));
+        config.register_access(Access::create(
             Id::new("Source 5").unwrap(),
             Id::new("instance#01").unwrap(),
-        );
-        config.register_access(
+        ));
+        config.register_access(Access::create(
             Id::new("Source 6").unwrap(),
             Id::new("instance#01").unwrap(),
-        );
-        config.register_access(
+        ));
+        config.register_access(Access::create(
             Id::new("Source 7").unwrap(),
             Id::new("instance#01").unwrap(),
-        );
+        ));
 
         assert_eq!(config.accesses().len(), 6);
         assert_eq!(config.accesses()[0].source().value(), "Source 7");

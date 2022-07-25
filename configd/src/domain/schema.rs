@@ -6,8 +6,8 @@ use core_lib::{
 use std::collections::HashMap;
 
 use crate::domain::{
-    Config, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id, Page,
-    Password, Prop, SchemaCreated, SchemaDeleted, SchemaRootPropChanged, Value,
+    Access, Config, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id,
+    Page, Password, Prop, SchemaCreated, SchemaDeleted, SchemaRootPropChanged, Value,
 };
 
 #[async_trait]
@@ -137,8 +137,7 @@ impl Schema {
     pub fn get_config(
         &mut self,
         id: &Id,
-        source: Option<Id>,
-        instance: Option<Id>,
+        access: Access,
         password: Option<&Password>,
     ) -> Result<Config, Error> {
         if let Some(config) = self.configs.get_mut(id) {
@@ -150,15 +149,12 @@ impl Schema {
                 .record(ConfigAccessed {
                     id: config.id().to_string(),
                     schema_id: self.id.to_string(),
-                    source: source.as_ref().map(|source| source.to_string()),
-                    instance: instance.as_ref().map(|instance| instance.to_string()),
+                    source: access.source().to_string(),
+                    instance: access.instance().to_string(),
                 })
                 .map_err(Error::Core)?;
 
-            config.register_access(
-                source.unwrap_or_else(|| Id::new("unknown").unwrap()),
-                instance.unwrap_or_else(|| Id::new("unknown").unwrap()),
-            );
+            config.register_access(access);
         }
 
         self.configs
@@ -432,7 +428,9 @@ mod tests {
             .unwrap();
 
         // Get config
-        let config = schema.get_config(&config_id, None, None, None).unwrap();
+        let config = schema
+            .get_config(&config_id, Access::unknown(), None)
+            .unwrap();
 
         assert_eq!(config.id(), &config_id);
         assert_eq!(config.name(), "Config 01");

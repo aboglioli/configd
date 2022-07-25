@@ -56,8 +56,8 @@ impl Publishable for SchemaDeleted {
 pub struct ConfigAccessed {
     pub id: String,
     pub schema_id: String,
-    pub source: Option<String>,
-    pub instance: Option<String>,
+    pub source: String,
+    pub instance: String,
 }
 
 impl Publishable for ConfigAccessed {

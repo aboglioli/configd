@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, Password, SchemaRepository};
+use crate::domain::{Access, Error, Id, Password, SchemaRepository};
 
 #[derive(Deserialize)]
 pub struct GetConfigCommand {
@@ -67,7 +67,14 @@ impl GetConfig {
             let instance = cmd.instance.map(Id::new).transpose()?;
             let password = cmd.password.map(Password::new).transpose()?;
 
-            let config = schema.get_config(&config_id, source, instance, password.as_ref())?;
+            let access = match (source, instance) {
+                (Some(source), Some(instance)) => Access::create(source, instance),
+                (Some(source), None) => Access::create_with_source(source),
+                (None, Some(instance)) => Access::create_with_instance(instance),
+                (None, None) => Access::unknown(),
+            };
+
+            let config = schema.get_config(&config_id, access, password.as_ref())?;
             let data = schema.populate_config(&config);
             let checksum = data.checksum();
 
