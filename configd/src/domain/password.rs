@@ -1,3 +1,4 @@
+use sha2::{Digest, Sha256};
 use std::fmt;
 
 use crate::domain::Error;
@@ -21,13 +22,19 @@ impl Password {
     }
 
     pub fn hash(&self) -> Result<Password, Error> {
-        let hashed_password = bcrypt::hash(&self.password, 4).map_err(Error::PasswordHash)?;
+        let mut hasher = Sha256::new();
+        hasher.update(&self.password);
+        let hashed_password = hex::encode(hasher.finalize());
 
         Password::new(hashed_password)
     }
 
     pub fn compare(&self, raw_password: &Password) -> bool {
-        bcrypt::verify(raw_password.value(), &self.password).unwrap_or(false)
+        let mut hasher = Sha256::new();
+        hasher.update(&raw_password.password);
+        let hashed_password = hex::encode(hasher.finalize());
+
+        self.password == hashed_password
     }
 }
 

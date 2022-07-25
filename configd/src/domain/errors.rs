@@ -49,8 +49,6 @@ pub enum Error {
     Core(#[source] core_lib::errors::Error),
     #[error("database error: {0}")]
     Database(#[source] sqlx::Error),
-    #[error("could not hash password: {0}")]
-    PasswordHash(#[source] bcrypt::BcryptError),
 }
 
 impl Error {
@@ -78,7 +76,6 @@ impl Error {
             Error::Serde(_) => "serde",
             Error::Core(_) => "core_lib",
             Error::Database(_) => "database",
-            Error::PasswordHash(_) => "password_hash",
         }
     }
 }
