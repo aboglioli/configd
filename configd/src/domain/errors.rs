@@ -11,6 +11,8 @@ pub enum Error {
     EmptyName,
     #[error("empty interval")]
     EmptyInterval,
+    #[error("unauthorized")]
+    Unauthorized,
 
     // Props
     #[error("mismatched kinds: expected {expected}, found {found}")]
@@ -33,6 +35,8 @@ pub enum Error {
     ConfigAlreadyExists(Id),
     #[error("page out of range")]
     PageOutOfRange,
+    #[error("invalid password")]
+    InvalidPassword,
 
     // Config validation
     #[error("invalid config")]
@@ -45,6 +49,8 @@ pub enum Error {
     Core(#[source] core_lib::errors::Error),
     #[error("database error: {0}")]
     Database(#[source] sqlx::Error),
+    #[error("could not hash password: {0}")]
+    PasswordHash(#[source] bcrypt::BcryptError),
 }
 
 impl Error {
@@ -53,6 +59,7 @@ impl Error {
             Error::EmptyId => "empty_id",
             Error::EmptyName => "empty_name",
             Error::EmptyInterval => "empty_interval",
+            Error::Unauthorized => "unauthorized",
 
             Error::MismatchedKinds { .. } => "mismatched_kinds",
             Error::InvalidArray => "invalid_array",
@@ -64,12 +71,14 @@ impl Error {
             Error::ConfigNotFound(_) => "config_not_found",
             Error::ConfigAlreadyExists(_) => "config_already_exists",
             Error::PageOutOfRange => "page_out_of_range",
+            Error::InvalidPassword => "invalid_password",
 
             Error::InvalidConfig(_) => "invalid_config",
 
             Error::Serde(_) => "serde",
             Error::Core(_) => "core_lib",
             Error::Database(_) => "database",
+            Error::PasswordHash(_) => "password_hash",
         }
     }
 }

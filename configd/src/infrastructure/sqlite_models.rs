@@ -5,7 +5,7 @@ use serde_json::Value as JsonValue;
 use sqlx::FromRow;
 use std::collections::HashMap;
 
-use crate::domain::{Access, Config, Error, Id, Schema};
+use crate::domain::{Access, Config, Error, Id, Password, Schema};
 
 #[derive(Serialize, Deserialize)]
 pub struct SqliteAccess {
@@ -21,6 +21,7 @@ pub struct SqliteConfig {
     pub name: String,
     pub data: JsonValue,
     pub valid: bool,
+    pub password: Option<String>,
     pub accesses: Vec<SqliteAccess>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -34,6 +35,7 @@ impl SqliteConfig {
             name: config.name().to_string(),
             data: config.data().into(),
             valid: config.is_valid(),
+            password: config.password().map(ToString::to_string),
             accesses: config
                 .accesses()
                 .iter()
@@ -56,6 +58,7 @@ impl SqliteConfig {
             self.name,
             self.data.into(),
             self.valid,
+            self.password.map(Password::new).transpose()?,
             self.accesses
                 .into_iter()
                 .map(|access| {

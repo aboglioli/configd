@@ -1,7 +1,7 @@
 use chrono::Duration;
 use core_lib::models::{Timestamps, Version};
 
-use crate::domain::{Access, Error, Id, Value};
+use crate::domain::{Access, Error, Id, Password, Value};
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -10,6 +10,7 @@ pub struct Config {
 
     data: Value,
     valid: bool,
+    password: Option<Password>,
 
     accesses: Vec<Access>,
 
@@ -23,6 +24,7 @@ impl Config {
         name: String,
         data: Value,
         valid: bool,
+        password: Option<Password>,
         accesses: Vec<Access>,
         timestamps: Timestamps,
         version: Version,
@@ -34,6 +36,7 @@ impl Config {
         Ok(Config {
             id,
             name,
+            password,
             data,
             valid,
             accesses,
@@ -42,12 +45,19 @@ impl Config {
         })
     }
 
-    pub fn create(id: Id, name: String, data: Value, valid: bool) -> Result<Config, Error> {
+    pub fn create(
+        id: Id,
+        name: String,
+        data: Value,
+        valid: bool,
+        password: Option<Password>,
+    ) -> Result<Config, Error> {
         Config::new(
             id,
             name,
             data,
             valid,
+            password.map(|password| password.hash()).transpose()?,
             Vec::new(),
             Timestamps::create(),
             Version::init_version(),
@@ -66,6 +76,41 @@ impl Config {
         &self.data
     }
 
+    pub fn is_valid(&self) -> bool {
+        self.valid
+    }
+
+    pub fn password(&self) -> Option<&Password> {
+        self.password.as_ref()
+    }
+
+    pub fn can_access(&self, raw_password: Option<&Password>) -> bool {
+        if let Some(password) = &self.password {
+            if let Some(raw_password) = raw_password {
+                if password.compare(raw_password) {
+                    true;
+                }
+            }
+
+            false
+        } else {
+            true
+        }
+    }
+
+    pub fn accesses(&self) -> &[Access] {
+        &self.accesses
+    }
+
+    pub fn timestamps(&self) -> &Timestamps {
+        &self.timestamps
+    }
+
+    pub fn version(&self) -> &Version {
+        &self.version
+    }
+
+    // Mutations
     pub fn change_data(&mut self, data: Value, valid: bool) -> Result<(), Error> {
         self.data = data;
         self.valid = valid;
@@ -76,19 +121,11 @@ impl Config {
         Ok(())
     }
 
-    pub fn is_valid(&self) -> bool {
-        self.valid
-    }
-
     pub fn mark_as_invalid(&mut self) {
         self.valid = false;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
-    }
-
-    pub fn accesses(&self) -> &[Access] {
-        &self.accesses
     }
 
     pub fn register_access(&mut self, source: Id, instance: Id) {
@@ -124,14 +161,6 @@ impl Config {
 
         self.accesses.truncate(6);
     }
-
-    pub fn timestamps(&self) -> &Timestamps {
-        &self.timestamps
-    }
-
-    pub fn version(&self) -> &Version {
-        &self.version
-    }
 }
 
 #[cfg(test)]
@@ -145,6 +174,7 @@ mod tests {
             "Config".to_string(),
             Value::String("data".to_string()),
             true,
+            None,
         )
         .unwrap();
 
