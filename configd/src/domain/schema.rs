@@ -6,8 +6,9 @@ use core_lib::{
 use std::collections::HashMap;
 
 use crate::domain::{
-    Access, Config, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id,
-    Page, Password, Prop, SchemaCreated, SchemaDeleted, SchemaRootPropChanged, Value,
+    Access, Config, ConfigAccessRemoved, ConfigAccessed, ConfigCreated, ConfigDataChanged,
+    ConfigDeleted, Error, Id, Page, Password, Prop, SchemaCreated, SchemaDeleted,
+    SchemaRootPropChanged, Value,
 };
 
 #[async_trait]
@@ -278,7 +279,18 @@ impl Schema {
             .get_mut(id)
             .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
 
-        let _removed_accesses = config.clean_old_accesses();
+        let removed_accesses = config.clean_old_accesses();
+
+        for access in removed_accesses.into_iter() {
+            self.event_collector
+                .record(ConfigAccessRemoved {
+                    id: config.id().to_string(),
+                    schema_id: self.id.to_string(),
+                    source: access.source().to_string(),
+                    instance: access.instance().to_string(),
+                })
+                .map_err(Error::Core)?;
+        }
 
         Ok(())
     }

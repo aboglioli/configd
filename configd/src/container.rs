@@ -1,8 +1,9 @@
-use core_lib::events::LocalEventBus;
+use core_lib::events::{LocalEventBus, Subscriber};
 use sqlx::SqlitePool;
 use std::sync::Arc;
 
 use crate::{
+    application::CleanConfigAccesses,
     config::{Config, Storage},
     domain::{Error, SchemaRepository},
     infrastructure::{InMemSchemaRepository, SQLiteSchemaRepository},
@@ -26,6 +27,15 @@ impl Container {
                 Arc::new(SQLiteSchemaRepository::new(sqlite_pool).await?)
             }
         };
+
+        let clean_config_accesses = CleanConfigAccesses::new(schema_repository.clone());
+        event_publisher
+            .subscribe(
+                "config.access_removed".into(),
+                Box::new(clean_config_accesses),
+            )
+            .await
+            .unwrap();
 
         Ok(Container {
             event_publisher,

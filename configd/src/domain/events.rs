@@ -122,3 +122,21 @@ impl Publishable for ConfigDeleted {
         "config.deleted"
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct ConfigAccessRemoved {
+    pub id: String,
+    pub schema_id: String,
+    pub source: String,
+    pub instance: String,
+}
+
+impl Publishable for ConfigAccessRemoved {
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn topic(&self) -> &str {
+        "config.access_removed"
+    }
+}
