@@ -162,34 +162,43 @@ impl Config {
         } else {
             self.accesses.push(access);
         }
+    }
 
-        self.accesses
-            .sort_by(|access1, access2| access2.timestamp().cmp(access1.timestamp()));
+    pub fn clean_old_accesses(&mut self) -> Vec<Access> {
+        let access_indexes_to_remove: Vec<usize> = self
+            .accesses
+            .iter()
+            .enumerate()
+            .filter(|(_, access)| {
+                let max_duration = access
+                    .elapsed_time_from_previous()
+                    .map(|previous| {
+                        if previous.num_seconds() < 2 {
+                            Duration::seconds(2)
+                        } else {
+                            previous * 2
+                        }
+                    })
+                    .unwrap_or_else(|| Duration::seconds(30));
 
-        self.accesses.retain(|access| {
-            let max_duration = access
-                .elapsed_time_from_previous()
-                .map(|mut previous| {
-                    previous = previous * 2;
+                access.elapsed_time() > max_duration
+            })
+            .map(|(i, _)| i)
+            .collect();
 
-                    if previous.num_seconds() < 2 {
-                        previous = previous + Duration::seconds(1);
-                    }
-
-                    previous
-                })
-                .unwrap_or_else(|| Duration::seconds(30));
-
-            access.elapsed_time() <= max_duration
-        });
-
-        self.accesses.truncate(6);
+        access_indexes_to_remove
+            .into_iter()
+            .rev() // reverse to not mutate indexes
+            .map(|i| self.accesses.remove(i))
+            .collect()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use chrono::{DateTime, Utc};
 
     #[test]
     fn register_access() {
@@ -212,8 +221,8 @@ mod tests {
             Id::new("instance#01").unwrap(),
         ));
 
-        assert_eq!(config.accesses()[0].source().value(), "Source 2");
-        assert_eq!(config.accesses()[1].source().value(), "Source 1");
+        assert_eq!(config.accesses()[0].source().value(), "Source 1");
+        assert_eq!(config.accesses()[1].source().value(), "Source 2");
 
         // Existing source
         config.register_access(Access::create(
@@ -231,36 +240,67 @@ mod tests {
         ));
 
         assert_eq!(config.accesses().len(), 3);
-        assert_eq!(config.accesses()[0].source().value(), "Source 3");
-        assert_eq!(config.accesses()[1].source().value(), "Source 1");
-        assert_eq!(config.accesses()[2].source().value(), "Source 2");
+        assert_eq!(config.accesses()[0].source().value(), "Source 1");
+        assert_eq!(config.accesses()[1].source().value(), "Source 2");
+        assert_eq!(config.accesses()[2].source().value(), "Source 3");
 
-        // Save last accesses only
-
+        // New instance
         config.register_access(Access::create(
-            Id::new("Source 4").unwrap(),
-            Id::new("instance#01").unwrap(),
-        ));
-        config.register_access(Access::create(
-            Id::new("Source 5").unwrap(),
-            Id::new("instance#01").unwrap(),
-        ));
-        config.register_access(Access::create(
-            Id::new("Source 6").unwrap(),
-            Id::new("instance#01").unwrap(),
-        ));
-        config.register_access(Access::create(
-            Id::new("Source 7").unwrap(),
-            Id::new("instance#01").unwrap(),
+            Id::new("Source 1").unwrap(),
+            Id::new("instance#02").unwrap(),
         ));
 
-        assert_eq!(config.accesses().len(), 6);
-        assert_eq!(config.accesses()[0].source().value(), "Source 7");
-        assert_eq!(config.accesses()[1].source().value(), "Source 6");
-        assert_eq!(config.accesses()[2].source().value(), "Source 5");
-        assert_eq!(config.accesses()[3].source().value(), "Source 4");
-        assert_eq!(config.accesses()[4].source().value(), "Source 3");
-        assert_eq!(config.accesses()[5].source().value(), "Source 1");
+        assert_eq!(config.accesses().len(), 4);
+        assert_eq!(config.accesses()[0].source().value(), "Source 1");
+        assert_eq!(config.accesses()[0].instance().value(), "instance#01");
+        assert_eq!(config.accesses()[1].source().value(), "Source 2");
+        assert_eq!(config.accesses()[2].source().value(), "Source 3");
+        assert_eq!(config.accesses()[3].source().value(), "Source 1");
+        assert_eq!(config.accesses()[3].instance().value(), "instance#02");
+    }
+
+    #[test]
+    fn clean_old_accesses() {
+        let mut config = Config::create(
+            Id::new("config#01").unwrap(),
+            "Config".to_string(),
+            Value::String("data".to_string()),
+            true,
+            None,
+        )
+        .unwrap();
+
+        config.register_access(Access::new(
+            Id::new("Source 1").unwrap(),
+            Id::new("instance#01").unwrap(),
+            DateTime::parse_from_rfc3339("2022-07-25T19:00:00Z")
+                .unwrap()
+                .into(),
+            None,
+        ));
+
+        config.register_access(Access::new(
+            Id::new("Source 2").unwrap(),
+            Id::new("instance#01").unwrap(),
+            DateTime::parse_from_rfc3339("2022-07-25T19:30:00Z")
+                .unwrap()
+                .into(),
+            None,
+        ));
+
+        config.register_access(Access::new(
+            Id::new("Source 1").unwrap(),
+            Id::new("instance#02").unwrap(),
+            Utc::now(),
+            None,
+        ));
+
+        let removed_accesses = config.clean_old_accesses();
+
+        assert_eq!(removed_accesses.len(), 2);
+        assert_eq!(config.accesses().len(), 1);
+        assert_eq!(config.accesses()[0].source().value(), "Source 1");
+        assert_eq!(config.accesses()[0].instance().value(), "instance#02");
     }
 
     #[test]
