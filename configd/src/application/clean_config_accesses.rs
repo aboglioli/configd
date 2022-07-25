@@ -5,7 +5,7 @@ use core_lib::{
 };
 use std::sync::Arc;
 
-use crate::domain::{ConfigAccessRemoved, Id, SchemaRepository};
+use crate::domain::{ConfigAccessed, Id, SchemaRepository};
 
 pub struct CleanConfigAccesses {
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
@@ -20,10 +20,8 @@ impl CleanConfigAccesses {
 #[async_trait]
 impl Handler for CleanConfigAccesses {
     async fn handle(&self, event: &Event) -> Result<()> {
-        if event.topic() == "config.access_removed" {
-            println!("{:?}", event);
-
-            let payload: ConfigAccessRemoved = event.deserialize_payload()?;
+        if event.topic() == "config.accessed" {
+            let payload: ConfigAccessed = event.deserialize_payload()?;
 
             let schema_id = Id::new(payload.schema_id).unwrap();
             let mut schema = self
@@ -36,6 +34,8 @@ impl Handler for CleanConfigAccesses {
             let config_id = Id::new(payload.id).unwrap();
 
             schema.clean_config_accesses(&config_id).unwrap();
+
+            self.schema_repository.save(&mut schema).await.unwrap();
         }
 
         Ok(())
