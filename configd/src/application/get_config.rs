@@ -100,12 +100,12 @@ impl GetConfig {
                 version: config.version().value(),
             };
 
+            self.schema_repository.save(&mut schema).await?;
+
             self.event_publisher
                 .publish(&schema.events())
                 .await
                 .map_err(Error::Core)?;
-
-            self.schema_repository.save(&mut schema).await?;
 
             return Ok(res);
         }
