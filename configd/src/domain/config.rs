@@ -137,6 +137,9 @@ impl Config {
 
         self.password = Some(new_password.hash()?);
 
+        self.timestamps = self.timestamps.update();
+        self.version = self.version.incr();
+
         Ok(())
     }
 
@@ -146,6 +149,9 @@ impl Config {
         }
 
         self.password = None;
+
+        self.timestamps = self.timestamps.update();
+        self.version = self.version.incr();
 
         Ok(())
     }
