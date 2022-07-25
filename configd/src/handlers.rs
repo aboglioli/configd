@@ -9,10 +9,11 @@ use std::{collections::HashMap, sync::Arc};
 use crate::{
     application::{
         ChangeConfigPassword, ChangeConfigPasswordCommand, CreateConfig, CreateConfigCommand,
-        CreateSchema, CreateSchemaCommand, DeleteConfig, DeleteConfigCommand, DeleteSchema,
-        DeleteSchemaCommand, GetConfig, GetConfigCommand, GetSchema, GetSchemaCommand, ListSchemas,
-        ListSchemasCommand, UpdateConfig, UpdateConfigCommand, UpdateSchema, UpdateSchemaCommand,
-        ValidateConfig, ValidateConfigCommand,
+        CreateSchema, CreateSchemaCommand, DeleteConfig, DeleteConfigCommand, DeleteConfigPassword,
+        DeleteConfigPasswordCommand, DeleteSchema, DeleteSchemaCommand, GetConfig,
+        GetConfigCommand, GetSchema, GetSchemaCommand, ListSchemas, ListSchemasCommand,
+        UpdateConfig, UpdateConfigCommand, UpdateSchema, UpdateSchemaCommand, ValidateConfig,
+        ValidateConfigCommand,
     },
     container::Container,
     domain::{Error, Reason},
@@ -240,6 +241,32 @@ pub async fn change_config_password(
     );
 
     let res = serv.exec(cmd).await?;
+
+    Ok((StatusCode::OK, Json(res)))
+}
+
+pub async fn delete_config_password(
+    Path((schema_id, config_id)): Path<(String, String)>,
+    headers: header::HeaderMap,
+    Extension(container): Extension<Arc<Container>>,
+) -> Result<impl IntoResponse, Error> {
+    let serv = DeleteConfigPassword::new(
+        container.event_publisher.clone(),
+        container.schema_repository.clone(),
+    );
+
+    let res = serv
+        .exec(DeleteConfigPasswordCommand {
+            schema_id,
+            config_id,
+            password: headers
+                .get("X-Configd-Password")
+                .map(|header| header.to_str())
+                .transpose()
+                .unwrap_or(None)
+                .map(|header| header.to_string()),
+        })
+        .await?;
 
     Ok((StatusCode::OK, Json(res)))
 }

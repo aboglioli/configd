@@ -259,6 +259,20 @@ impl Schema {
         Err(Error::ConfigNotFound(id.clone()))
     }
 
+    pub fn delete_config_password(
+        &mut self,
+        id: &Id,
+        password: Option<&Password>,
+    ) -> Result<(), Error> {
+        if let Some(config) = self.configs.get_mut(id) {
+            config.delete_password(password)?;
+
+            return Ok(());
+        }
+
+        Err(Error::ConfigNotFound(id.clone()))
+    }
+
     pub fn delete_config(&mut self, id: &Id, password: Option<&Password>) -> Result<(), Error> {
         if let Some(config) = self.configs.get(id) {
             if !config.can_access(password) {

@@ -140,6 +140,16 @@ impl Config {
         Ok(())
     }
 
+    pub fn delete_password(&mut self, password: Option<&Password>) -> Result<(), Error> {
+        if !self.can_access(password) {
+            return Err(Error::Unauthorized);
+        }
+
+        self.password = None;
+
+        Ok(())
+    }
+
     pub fn register_access(&mut self, source: Id, instance: Id) {
         if let Some(access) = self
             .accesses
