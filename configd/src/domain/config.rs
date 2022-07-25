@@ -126,6 +126,20 @@ impl Config {
         self.version = self.version.incr();
     }
 
+    pub fn change_password(
+        &mut self,
+        old_password: Option<&Password>,
+        new_password: Password,
+    ) -> Result<(), Error> {
+        if !self.can_access(old_password) {
+            return Err(Error::Unauthorized);
+        }
+
+        self.password = Some(new_password.hash()?);
+
+        Ok(())
+    }
+
     pub fn register_access(&mut self, source: Id, instance: Id) {
         if let Some(access) = self
             .accesses

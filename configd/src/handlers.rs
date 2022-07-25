@@ -8,11 +8,11 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     application::{
-        CreateConfig, CreateConfigCommand, CreateSchema, CreateSchemaCommand, DeleteConfig,
-        DeleteConfigCommand, DeleteSchema, DeleteSchemaCommand, GetConfig, GetConfigCommand,
-        GetSchema, GetSchemaCommand, ListSchemas, ListSchemasCommand, UpdateConfig,
-        UpdateConfigCommand, UpdateSchema, UpdateSchemaCommand, ValidateConfig,
-        ValidateConfigCommand,
+        ChangeConfigPassword, ChangeConfigPasswordCommand, CreateConfig, CreateConfigCommand,
+        CreateSchema, CreateSchemaCommand, DeleteConfig, DeleteConfigCommand, DeleteSchema,
+        DeleteSchemaCommand, GetConfig, GetConfigCommand, GetSchema, GetSchemaCommand, ListSchemas,
+        ListSchemasCommand, UpdateConfig, UpdateConfigCommand, UpdateSchema, UpdateSchemaCommand,
+        ValidateConfig, ValidateConfigCommand,
     },
     container::Container,
     domain::{Error, Reason},
@@ -217,6 +217,24 @@ pub async fn update_config(
         .map(|header| header.to_string());
 
     let serv = UpdateConfig::new(
+        container.event_publisher.clone(),
+        container.schema_repository.clone(),
+    );
+
+    let res = serv.exec(cmd).await?;
+
+    Ok((StatusCode::OK, Json(res)))
+}
+
+pub async fn change_config_password(
+    Path((schema_id, config_id)): Path<(String, String)>,
+    Json(mut cmd): Json<ChangeConfigPasswordCommand>,
+    Extension(container): Extension<Arc<Container>>,
+) -> Result<impl IntoResponse, Error> {
+    cmd.schema_id = schema_id;
+    cmd.config_id = config_id;
+
+    let serv = ChangeConfigPassword::new(
         container.event_publisher.clone(),
         container.schema_repository.clone(),
     );

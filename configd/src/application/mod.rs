@@ -1,3 +1,4 @@
+mod change_config_password;
 mod create_config;
 mod create_schema;
 mod delete_config;
@@ -9,6 +10,7 @@ mod update_config;
 mod update_schema;
 mod validate_config;
 
+pub use change_config_password::*;
 pub use create_config::*;
 pub use create_schema::*;
 pub use delete_config::*;

@@ -46,6 +46,10 @@ async fn main() {
                 .delete(handlers::delete_config),
         )
         .route(
+            "/schemas/:schema_id/configs/:config_id/password",
+            post(handlers::change_config_password),
+        )
+        .route(
             "/schemas/:schema_id/validate",
             post(handlers::validate_config),
         )
