@@ -87,12 +87,10 @@ impl Config {
     pub fn can_access(&self, raw_password: Option<&Password>) -> bool {
         if let Some(password) = &self.password {
             if let Some(raw_password) = raw_password {
-                if password.compare(raw_password) {
-                    true;
-                }
+                password.compare(raw_password)
+            } else {
+                false
             }
-
-            false
         } else {
             true
         }
@@ -237,5 +235,35 @@ mod tests {
         assert_eq!(config.accesses()[3].source().value(), "Source 4");
         assert_eq!(config.accesses()[4].source().value(), "Source 3");
         assert_eq!(config.accesses()[5].source().value(), "Source 1");
+    }
+
+    #[test]
+    fn can_access() {
+        // No password
+        let config = Config::create(
+            Id::new("config#01").unwrap(),
+            "Config".to_string(),
+            Value::String("data".to_string()),
+            true,
+            None,
+        )
+        .unwrap();
+
+        assert!(config.can_access(Some(&Password::new("passwd123".to_string()).unwrap())));
+        assert!(config.can_access(Some(&Password::new("passwd321".to_string()).unwrap())));
+
+        // With password
+        let config = Config::create(
+            Id::new("config#01").unwrap(),
+            "Config".to_string(),
+            Value::String("data".to_string()),
+            true,
+            Some(Password::new("passwd123".to_string()).unwrap()),
+        )
+        .unwrap();
+
+        assert_ne!(config.password().unwrap().value(), "passwd123");
+        assert!(config.can_access(Some(&Password::new("passwd123".to_string()).unwrap())));
+        assert!(!config.can_access(Some(&Password::new("passwd321".to_string()).unwrap())));
     }
 }

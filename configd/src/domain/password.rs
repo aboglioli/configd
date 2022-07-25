@@ -21,8 +21,7 @@ impl Password {
     }
 
     pub fn hash(&self) -> Result<Password, Error> {
-        let hashed_password =
-            bcrypt::hash(&self.password, bcrypt::DEFAULT_COST).map_err(Error::PasswordHash)?;
+        let hashed_password = bcrypt::hash(&self.password, 4).map_err(Error::PasswordHash)?;
 
         Password::new(hashed_password)
     }
