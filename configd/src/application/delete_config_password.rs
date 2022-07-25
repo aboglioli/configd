@@ -10,6 +10,7 @@ pub struct DeleteConfigPasswordCommand {
     pub schema_id: String,
     #[serde(skip_deserializing)]
     pub config_id: String,
+    #[serde(skip_deserializing)]
     pub password: Option<String>,
 }
 
