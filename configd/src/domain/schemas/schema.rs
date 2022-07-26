@@ -10,7 +10,8 @@ use crate::domain::{
     errors::Error,
     schemas::{
         ConfigAccessRemoved, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted,
-        SchemaCreated, SchemaDeleted, SchemaRootPropChanged,
+        ConfigPasswordChanged, ConfigPasswordDeleted, SchemaCreated, SchemaDeleted,
+        SchemaRootPropChanged,
     },
     shared::{Id, Page},
     values::{Prop, Value},
@@ -116,6 +117,10 @@ impl Schema {
         self.event_collector.drain()
     }
 
+    pub fn all_events(&self) -> &[Event] {
+        self.event_collector.all()
+    }
+
     // Mutations
     pub fn change_root_prop(&mut self, prop: Prop) -> Result<(), Error> {
         self.root_prop = prop;
@@ -155,16 +160,18 @@ impl Schema {
             return Err(Error::Unauthorized);
         }
 
+        let last_access = config.register_access(access);
+
         self.event_collector
             .record(ConfigAccessed {
-                id: config.id().to_string(),
                 schema_id: self.id.to_string(),
-                source: access.source().to_string(),
-                instance: access.instance().to_string(),
+                id: id.to_string(),
+                source: last_access.source().to_string(),
+                instance: last_access.instance().to_string(),
+                timestamp: *last_access.timestamp(),
+                previous: last_access.previous().copied(),
             })
             .map_err(Error::Core)?;
-
-        config.register_access(access);
 
         Ok(config.clone())
     }
@@ -194,11 +201,12 @@ impl Schema {
 
         self.event_collector
             .record(ConfigCreated {
-                id: config.id().to_string(),
                 schema_id: self.id.to_string(),
+                id: config.id().to_string(),
                 name: config.name().to_string(),
                 data: config.data().into(),
                 valid: config.is_valid(),
+                password: config.password().map(ToString::to_string),
             })
             .map_err(Error::Core)?;
 
@@ -234,8 +242,8 @@ impl Schema {
 
         self.event_collector
             .record(ConfigDataChanged {
-                id: config.id().to_string(),
                 schema_id: self.id.to_string(),
+                id: config.id().to_string(),
                 data: config.data().into(),
                 valid: config.is_valid(),
             })
@@ -260,6 +268,14 @@ impl Schema {
 
         config.change_password(old_password, new_password)?;
 
+        self.event_collector
+            .record(ConfigPasswordChanged {
+                schema_id: self.id.to_string(),
+                id: config.id().to_string(),
+                password: config.password().unwrap().to_string(),
+            })
+            .map_err(Error::Core)?;
+
         Ok(())
     }
 
@@ -274,6 +290,13 @@ impl Schema {
             .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
 
         config.delete_password(password)?;
+
+        self.event_collector
+            .record(ConfigPasswordDeleted {
+                schema_id: self.id.to_string(),
+                id: config.id().to_string(),
+            })
+            .map_err(Error::Core)?;
 
         Ok(())
     }

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use core_lib::events::Publishable;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -54,10 +55,12 @@ impl Publishable for SchemaDeleted {
 // Config
 #[derive(Serialize, Deserialize)]
 pub struct ConfigAccessed {
-    pub id: String,
     pub schema_id: String,
+    pub id: String,
     pub source: String,
     pub instance: String,
+    pub timestamp: DateTime<Utc>,
+    pub previous: Option<DateTime<Utc>>,
 }
 
 impl Publishable for ConfigAccessed {
@@ -72,11 +75,12 @@ impl Publishable for ConfigAccessed {
 
 #[derive(Serialize, Deserialize)]
 pub struct ConfigCreated {
-    pub id: String,
     pub schema_id: String,
+    pub id: String,
     pub name: String,
     pub data: JsonValue,
     pub valid: bool,
+    pub password: Option<String>,
 }
 
 impl Publishable for ConfigCreated {
@@ -91,8 +95,8 @@ impl Publishable for ConfigCreated {
 
 #[derive(Serialize, Deserialize)]
 pub struct ConfigDataChanged {
-    pub id: String,
     pub schema_id: String,
+    pub id: String,
     pub data: JsonValue,
     pub valid: bool,
 }
@@ -108,9 +112,42 @@ impl Publishable for ConfigDataChanged {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ConfigDeleted {
-    pub id: String,
+pub struct ConfigPasswordChanged {
     pub schema_id: String,
+    pub id: String,
+    pub password: String,
+}
+
+impl Publishable for ConfigPasswordChanged {
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn topic(&self) -> &str {
+        "config.password_changed"
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ConfigPasswordDeleted {
+    pub schema_id: String,
+    pub id: String,
+}
+
+impl Publishable for ConfigPasswordDeleted {
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn topic(&self) -> &str {
+        "config.password_deleted"
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ConfigDeleted {
+    pub schema_id: String,
+    pub id: String,
 }
 
 impl Publishable for ConfigDeleted {
@@ -125,8 +162,8 @@ impl Publishable for ConfigDeleted {
 
 #[derive(Serialize, Deserialize)]
 pub struct ConfigAccessRemoved {
-    pub id: String,
     pub schema_id: String,
+    pub id: String,
     pub source: String,
     pub instance: String,
 }

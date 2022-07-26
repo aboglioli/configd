@@ -161,12 +161,22 @@ impl Config {
         Ok(())
     }
 
-    pub fn register_access(&mut self, access: Access) {
-        if let Some(access) = self.accesses.iter_mut().find(|a| a.equals(&access)) {
+    pub fn register_access(&mut self, access: Access) -> &Access {
+        let index: usize;
+        if let Some((i, access)) = self
+            .accesses
+            .iter_mut()
+            .enumerate()
+            .find(|(_, a)| a.equals(&access))
+        {
             *access = access.ping();
+            index = i;
         } else {
+            index = self.accesses.len();
             self.accesses.push(access);
         }
+
+        &self.accesses[index]
     }
 
     pub fn clean_old_accesses(&mut self) -> Vec<Access> {
