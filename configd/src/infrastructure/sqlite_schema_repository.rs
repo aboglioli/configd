@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::{
     domain::{
-        configs::{Access, Config},
+        configs::Access,
         errors::Error,
         schemas::{
             ConfigAccessRemoved, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted,
@@ -87,21 +87,43 @@ impl SchemaRepository for SQLiteSchemaRepository {
         .await
         .map_err(Error::Database)?;
 
+        let mut schemas = Vec::new();
+        for sqlite_schema in sqlite_schemas.into_iter() {
+            let sqlite_configs: Vec<SqliteConfig> =
+                sqlx::query_as("SELECT * FROM configs WHERE schema_id = $1")
+                    .bind(&sqlite_schema.id)
+                    .fetch_all(&self.pool)
+                    .await
+                    .map_err(Error::Database)?;
+
+            let mut configs = HashMap::new();
+            for sqlite_config in sqlite_configs.into_iter() {
+                let sqlite_accesses: Vec<SqliteAccess> =
+                    sqlx::query_as("SELECT * FROM accesses WHERE schema_id = $1 AND id = $2")
+                        .bind(&sqlite_schema.id)
+                        .bind(&sqlite_config.id)
+                        .fetch_all(&self.pool)
+                        .await
+                        .map_err(Error::Database)?;
+
+                let accesses = sqlite_accesses
+                    .into_iter()
+                    .map(SqliteAccess::to_domain)
+                    .collect::<Result<Vec<Access>, Error>>()?;
+
+                let config = sqlite_config.to_domain(accesses)?;
+                configs.insert(config.id().clone(), config);
+            }
+
+            schemas.push(sqlite_schema.to_domain(configs)?);
+        }
+
         let count: u32 = sqlx::query_scalar("SELECT COUNT(*) FROM schemas")
             .fetch_one(&self.pool)
             .await
             .map_err(Error::Database)?;
 
-        Page::new(
-            offset,
-            limit,
-            count as u64,
-            // sqlite_schemas
-            //     .into_iter()
-            //     .map(SqliteSchema::to_domain)
-            //     .collect::<Result<Vec<Schema>, Error>>()?,
-            Vec::new(),
-        )
+        Page::new(offset, limit, count as u64, schemas)
     }
 
     async fn find_by_id(&self, id: &Id) -> Result<Option<Schema>, Error> {
