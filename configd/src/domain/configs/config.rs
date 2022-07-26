@@ -189,7 +189,7 @@ impl Config {
                     .elapsed_time_from_previous()
                     .map(|previous| {
                         if previous.num_seconds() < 2 {
-                            Duration::seconds(2)
+                            previous + Duration::seconds(2)
                         } else {
                             previous * 2
                         }
