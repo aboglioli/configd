@@ -1,4 +1,4 @@
-use crate::domain::Error;
+use crate::domain::errors::Error;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Interval {

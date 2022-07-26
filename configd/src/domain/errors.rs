@@ -1,6 +1,9 @@
 use thiserror::Error;
 
-use crate::domain::{Diff, Id, Kind};
+use crate::domain::{
+    shared::Id,
+    values::{Diff, Kind},
+};
 
 #[derive(Error, Debug)]
 pub enum Error {

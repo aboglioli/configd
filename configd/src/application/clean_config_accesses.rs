@@ -5,7 +5,10 @@ use core_lib::{
 };
 use std::sync::Arc;
 
-use crate::domain::{ConfigAccessed, Id, SchemaRepository};
+use crate::domain::{
+    schemas::{ConfigAccessed, SchemaRepository},
+    shared::Id,
+};
 
 pub struct CleanConfigAccesses {
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,

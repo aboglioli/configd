@@ -4,7 +4,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Access, Error, Id, Password, SchemaRepository};
+use crate::domain::{
+    configs::{Access, Password},
+    errors::Error,
+    schemas::SchemaRepository,
+    shared::Id,
+};
 
 #[derive(Deserialize)]
 pub struct GetConfigCommand {

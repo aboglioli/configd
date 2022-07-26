@@ -1,7 +1,10 @@
 use regex::Regex;
 use std::collections::BTreeMap;
 
-use crate::domain::{Diff, Error, Interval, Kind, Reason, Value};
+use crate::domain::{
+    errors::Error,
+    values::{Diff, Interval, Kind, Reason, Value},
+};
 
 pub trait PropConverter<T> {
     type Error;

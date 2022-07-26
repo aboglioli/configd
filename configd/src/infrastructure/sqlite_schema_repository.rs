@@ -2,7 +2,11 @@ use async_trait::async_trait;
 use sqlx::SqlitePool;
 
 use crate::{
-    domain::{Error, Id, Page, Schema, SchemaRepository},
+    domain::{
+        errors::Error,
+        schemas::{Schema, SchemaRepository},
+        shared::{Id, Page},
+    },
     infrastructure::SqliteSchema,
 };
 

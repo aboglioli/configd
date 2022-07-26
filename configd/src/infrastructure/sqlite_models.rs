@@ -5,7 +5,12 @@ use serde_json::Value as JsonValue;
 use sqlx::FromRow;
 use std::collections::HashMap;
 
-use crate::domain::{Access, Config, Error, Id, Password, Schema};
+use crate::domain::{
+    configs::{Access, Config, Password},
+    errors::Error,
+    schemas::Schema,
+    shared::Id,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct SqliteAccess {

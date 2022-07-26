@@ -6,9 +6,14 @@ use core_lib::{
 use std::collections::HashMap;
 
 use crate::domain::{
-    Access, Config, ConfigAccessRemoved, ConfigAccessed, ConfigCreated, ConfigDataChanged,
-    ConfigDeleted, Error, Id, Page, Password, Prop, SchemaCreated, SchemaDeleted,
-    SchemaRootPropChanged, Value,
+    configs::{Access, Config, Password},
+    errors::Error,
+    schemas::{
+        ConfigAccessRemoved, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted,
+        SchemaCreated, SchemaDeleted, SchemaRootPropChanged,
+    },
+    shared::{Id, Page},
+    values::{Prop, Value},
 };
 
 #[async_trait]
@@ -343,7 +348,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use crate::domain::{Interval, Value};
+    use crate::domain::values::{Interval, Value};
 
     #[test]
     fn create() {

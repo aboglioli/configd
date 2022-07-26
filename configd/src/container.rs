@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::{
     application::CleanConfigAccesses,
     config::{Config, Storage},
-    domain::{Error, SchemaRepository},
+    domain::{errors::Error, schemas::SchemaRepository},
     infrastructure::{InMemSchemaRepository, SQLiteSchemaRepository},
 };
 

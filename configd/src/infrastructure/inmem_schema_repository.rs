@@ -2,7 +2,11 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 
-use crate::domain::{Error, Id, Page, Schema, SchemaRepository};
+use crate::domain::{
+    errors::Error,
+    schemas::{Schema, SchemaRepository},
+    shared::{Id, Page},
+};
 
 pub struct InMemSchemaRepository {
     items: RwLock<HashMap<Id, Schema>>,

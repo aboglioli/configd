@@ -3,7 +3,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, Schema, SchemaRepository};
+use crate::domain::{
+    errors::Error,
+    schemas::{Schema, SchemaRepository},
+    shared::Id,
+};
 
 #[derive(Deserialize)]
 pub struct CreateSchemaCommand {

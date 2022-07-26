@@ -2,7 +2,7 @@ use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, Password, SchemaRepository};
+use crate::domain::{configs::Password, errors::Error, schemas::SchemaRepository, shared::Id};
 
 #[derive(Deserialize)]
 pub struct DeleteConfigCommand {

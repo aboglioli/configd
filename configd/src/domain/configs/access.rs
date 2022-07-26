@@ -1,6 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
 
-use crate::domain::Id;
+use crate::domain::shared::Id;
 
 #[derive(Debug, Clone)]
 pub struct Access {

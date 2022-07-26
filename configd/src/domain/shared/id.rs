@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::domain::Error;
+use crate::domain::errors::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Id {
