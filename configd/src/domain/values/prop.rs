@@ -6,13 +6,6 @@ use crate::domain::{
     values::{Diff, Interval, Kind, Reason, Value},
 };
 
-pub trait PropConverter<T> {
-    type Error;
-
-    fn from(&self, props: T) -> Result<Prop, Self::Error>;
-    fn to(&self, prop: Prop) -> Result<T, Self::Error>;
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum Prop {
     Bool {
