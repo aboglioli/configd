@@ -1,11 +1,9 @@
 use async_trait::async_trait;
-use core_lib::{
-    errors::Result,
-    events::{Event, Handler},
-};
 use std::sync::Arc;
 
 use crate::domain::{
+    errors::Error,
+    events::{Event, Handler},
     schemas::{ConfigAccessed, SchemaRepository},
     shared::Id,
 };
@@ -22,7 +20,7 @@ impl CleanConfigAccesses {
 
 #[async_trait]
 impl Handler for CleanConfigAccesses {
-    async fn handle(&self, event: &Event) -> Result<()> {
+    async fn handle(&self, event: &Event) -> Result<(), Error> {
         if event.topic() == "config.accessed" {
             let payload: ConfigAccessed = event.deserialize_payload()?;
 

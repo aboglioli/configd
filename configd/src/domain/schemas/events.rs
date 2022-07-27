@@ -1,7 +1,8 @@
 use chrono::{DateTime, Utc};
-use core_lib::events::Publishable;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
+
+use crate::domain::events::Publishable;
 
 // Schema
 #[derive(Serialize, Deserialize)]
@@ -12,7 +13,7 @@ pub struct SchemaCreated {
 }
 
 impl Publishable for SchemaCreated {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -28,7 +29,7 @@ pub struct SchemaRootPropChanged {
 }
 
 impl Publishable for SchemaRootPropChanged {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -43,7 +44,7 @@ pub struct SchemaDeleted {
 }
 
 impl Publishable for SchemaDeleted {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -64,7 +65,7 @@ pub struct ConfigAccessed {
 }
 
 impl Publishable for ConfigAccessed {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -84,7 +85,7 @@ pub struct ConfigCreated {
 }
 
 impl Publishable for ConfigCreated {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -102,7 +103,7 @@ pub struct ConfigDataChanged {
 }
 
 impl Publishable for ConfigDataChanged {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -119,7 +120,7 @@ pub struct ConfigPasswordChanged {
 }
 
 impl Publishable for ConfigPasswordChanged {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -135,7 +136,7 @@ pub struct ConfigPasswordDeleted {
 }
 
 impl Publishable for ConfigPasswordDeleted {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -151,7 +152,7 @@ pub struct ConfigDeleted {
 }
 
 impl Publishable for ConfigDeleted {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -169,7 +170,7 @@ pub struct ConfigAccessRemoved {
 }
 
 impl Publishable for ConfigAccessRemoved {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 

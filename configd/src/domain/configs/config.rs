@@ -1,10 +1,9 @@
 use chrono::Duration;
-use core_lib::models::{Timestamps, Version};
 
 use crate::domain::{
     configs::{Access, Password},
     errors::Error,
-    shared::Id,
+    shared::{Id, Timestamps, Version},
     values::Value,
 };
 

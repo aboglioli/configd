@@ -1,19 +1,16 @@
 use async_trait::async_trait;
-use core_lib::{
-    events::{Event, EventCollector},
-    models::{Timestamps, Version},
-};
 use std::collections::HashMap;
 
 use crate::domain::{
     configs::{Access, Config, Password},
     errors::Error,
+    events::{Event, EventCollector},
     schemas::{
         ConfigAccessRemoved, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted,
         ConfigPasswordChanged, ConfigPasswordDeleted, SchemaCreated, SchemaDeleted,
         SchemaRootPropChanged,
     },
-    shared::{Id, Page},
+    shared::{Id, Page, Timestamps, Version},
     values::{Prop, Value},
 };
 
@@ -77,14 +74,11 @@ impl Schema {
             Some(EventCollector::create()),
         )?;
 
-        schema
-            .event_collector
-            .record(SchemaCreated {
-                id: schema.id().to_string(),
-                name: schema.name().to_string(),
-                root_prop: schema.root_prop().clone().try_into()?,
-            })
-            .map_err(Error::Core)?;
+        schema.event_collector.record(SchemaCreated {
+            id: schema.id().to_string(),
+            name: schema.name().to_string(),
+            root_prop: schema.root_prop().clone().try_into()?,
+        })?;
 
         Ok(schema)
     }
@@ -132,12 +126,10 @@ impl Schema {
             }
         }
 
-        self.event_collector
-            .record(SchemaRootPropChanged {
-                id: self.id.to_string(),
-                root_prop: self.root_prop.clone().try_into()?,
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(SchemaRootPropChanged {
+            id: self.id.to_string(),
+            root_prop: self.root_prop.clone().try_into()?,
+        })?;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
@@ -162,16 +154,14 @@ impl Schema {
 
         let last_access = config.register_access(access);
 
-        self.event_collector
-            .record(ConfigAccessed {
-                schema_id: self.id.to_string(),
-                id: id.to_string(),
-                source: last_access.source().to_string(),
-                instance: last_access.instance().to_string(),
-                timestamp: *last_access.timestamp(),
-                previous: last_access.previous().copied(),
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(ConfigAccessed {
+            schema_id: self.id.to_string(),
+            id: id.to_string(),
+            source: last_access.source().to_string(),
+            instance: last_access.instance().to_string(),
+            timestamp: *last_access.timestamp(),
+            previous: last_access.previous().copied(),
+        })?;
 
         Ok(config.clone())
     }
@@ -199,16 +189,14 @@ impl Schema {
 
         let config = Config::create(id, name, data, diff.is_empty(), password)?;
 
-        self.event_collector
-            .record(ConfigCreated {
-                schema_id: self.id.to_string(),
-                id: config.id().to_string(),
-                name: config.name().to_string(),
-                data: config.data().into(),
-                valid: config.is_valid(),
-                password: config.password().map(ToString::to_string),
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(ConfigCreated {
+            schema_id: self.id.to_string(),
+            id: config.id().to_string(),
+            name: config.name().to_string(),
+            data: config.data().into(),
+            valid: config.is_valid(),
+            password: config.password().map(ToString::to_string),
+        })?;
 
         self.configs.insert(config.id().clone(), config);
 
@@ -240,14 +228,12 @@ impl Schema {
 
         config.change_data(data, diff.is_empty())?;
 
-        self.event_collector
-            .record(ConfigDataChanged {
-                schema_id: self.id.to_string(),
-                id: config.id().to_string(),
-                data: config.data().into(),
-                valid: config.is_valid(),
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(ConfigDataChanged {
+            schema_id: self.id.to_string(),
+            id: config.id().to_string(),
+            data: config.data().into(),
+            valid: config.is_valid(),
+        })?;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
@@ -268,13 +254,11 @@ impl Schema {
 
         config.change_password(old_password, new_password)?;
 
-        self.event_collector
-            .record(ConfigPasswordChanged {
-                schema_id: self.id.to_string(),
-                id: config.id().to_string(),
-                password: config.password().unwrap().to_string(),
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(ConfigPasswordChanged {
+            schema_id: self.id.to_string(),
+            id: config.id().to_string(),
+            password: config.password().unwrap().to_string(),
+        })?;
 
         Ok(())
     }
@@ -291,12 +275,10 @@ impl Schema {
 
         config.delete_password(password)?;
 
-        self.event_collector
-            .record(ConfigPasswordDeleted {
-                schema_id: self.id.to_string(),
-                id: config.id().to_string(),
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(ConfigPasswordDeleted {
+            schema_id: self.id.to_string(),
+            id: config.id().to_string(),
+        })?;
 
         Ok(())
     }
@@ -310,14 +292,12 @@ impl Schema {
         let removed_accesses = config.clean_old_accesses();
 
         for access in removed_accesses.into_iter() {
-            self.event_collector
-                .record(ConfigAccessRemoved {
-                    id: config.id().to_string(),
-                    schema_id: self.id.to_string(),
-                    source: access.source().to_string(),
-                    instance: access.instance().to_string(),
-                })
-                .map_err(Error::Core)?;
+            self.event_collector.record(ConfigAccessRemoved {
+                id: config.id().to_string(),
+                schema_id: self.id.to_string(),
+                source: access.source().to_string(),
+                instance: access.instance().to_string(),
+            })?;
         }
 
         Ok(())
@@ -335,12 +315,10 @@ impl Schema {
 
         self.configs.remove(id);
 
-        self.event_collector
-            .record(ConfigDeleted {
-                id: id.to_string(),
-                schema_id: self.id.to_string(),
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(ConfigDeleted {
+            id: id.to_string(),
+            schema_id: self.id.to_string(),
+        })?;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
@@ -353,11 +331,9 @@ impl Schema {
             return Err(Error::SchemaContainsConfigs(self.id.clone()));
         }
 
-        self.event_collector
-            .record(SchemaDeleted {
-                id: self.id.to_string(),
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(SchemaDeleted {
+            id: self.id.to_string(),
+        })?;
 
         self.timestamps = self.timestamps.delete();
 

@@ -1,5 +1,4 @@
 use chrono::{DateTime, Utc};
-use core_lib::models::{Timestamps, Version};
 use serde_json::Value as JsonValue;
 use sqlx::FromRow;
 use std::collections::HashMap;
@@ -8,7 +7,7 @@ use crate::domain::{
     configs::{Access, Config, Password},
     errors::Error,
     schemas::Schema,
-    shared::Id,
+    shared::{Id, Timestamps, Version},
 };
 
 #[derive(FromRow)]
@@ -74,8 +73,8 @@ impl SqliteConfig {
             self.valid,
             self.password.map(Password::new).transpose()?,
             accesses,
-            Timestamps::new(self.created_at, self.updated_at, None).map_err(Error::Core)?,
-            Version::new(self.version).map_err(Error::Core)?,
+            Timestamps::new(self.created_at, self.updated_at, None)?,
+            Version::new(self.version)?,
         )
     }
 }
@@ -118,8 +117,8 @@ impl SqliteSchema {
             self.name,
             self.root_prop.try_into()?,
             configs,
-            Timestamps::new(self.created_at, self.updated_at, None).map_err(Error::Core)?,
-            Version::new(self.version).map_err(Error::Core)?,
+            Timestamps::new(self.created_at, self.updated_at, None)?,
+            Version::new(self.version)?,
             None,
         )
     }

@@ -1,5 +1,4 @@
 use chrono::{DateTime, Utc};
-use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
@@ -7,6 +6,7 @@ use std::sync::Arc;
 use crate::domain::{
     configs::{Access, Password},
     errors::Error,
+    events::Publisher,
     schemas::SchemaRepository,
     shared::Id,
 };
@@ -107,10 +107,7 @@ impl GetConfig {
 
             self.schema_repository.save(&mut schema).await?;
 
-            self.event_publisher
-                .publish(&schema.events())
-                .await
-                .map_err(Error::Core)?;
+            self.event_publisher.publish(&schema.events()).await?;
 
             return Ok(res);
         }

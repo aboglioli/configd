@@ -1,12 +1,11 @@
-use core_lib::events::{LocalEventBus, Subscriber};
 use sqlx::SqlitePool;
 use std::sync::Arc;
 
 use crate::{
     application::CleanConfigAccesses,
     config::{Config, Storage},
-    domain::{errors::Error, schemas::SchemaRepository},
-    infrastructure::{InMemSchemaRepository, SQLiteSchemaRepository},
+    domain::{errors::Error, events::Subscriber, schemas::SchemaRepository},
+    infrastructure::{InMemSchemaRepository, LocalEventBus, SQLiteSchemaRepository},
 };
 
 pub struct Container {
