@@ -1,4 +1,5 @@
 use std::fmt;
+use uuid::Uuid;
 
 use crate::domain::errors::Error;
 
@@ -16,6 +17,10 @@ impl Id {
         }
 
         Ok(Id { id })
+    }
+
+    pub fn generate() -> Id {
+        Id::new(Uuid::new_v4().to_string()).unwrap()
     }
 
     pub fn slug<I: AsRef<str>>(id: I) -> Result<Id, Error> {
