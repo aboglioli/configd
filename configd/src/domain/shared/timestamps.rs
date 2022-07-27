@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 
 use crate::domain::errors::Error;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Timestamps {
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,

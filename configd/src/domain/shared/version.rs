@@ -1,6 +1,6 @@
 use crate::domain::errors::Error;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Version {
     version: i64,
     updated: bool,

@@ -30,8 +30,8 @@ fn subject_has_topic(subject: &str, topic: &str) -> bool {
         return true;
     }
 
-    let subject_parts: Vec<String> = subject.split(".").map(str::to_lowercase).collect();
-    let topic_parts: Vec<String> = topic.split(".").map(str::to_lowercase).collect();
+    let subject_parts: Vec<String> = subject.split('.').map(str::to_lowercase).collect();
+    let topic_parts: Vec<String> = topic.split('.').map(str::to_lowercase).collect();
 
     if subject_parts.len() != topic_parts.len() {
         return false;
@@ -114,27 +114,27 @@ mod tests {
 
         // Subscriptions
         let res = event_bus
-            .subscribe("topic.*".into(), Box::new(counter.clone()))
+            .subscribe("topic.*", Box::new(counter.clone()))
             .await;
-        assert!(!res.is_err());
+        assert!(res.is_ok());
 
         let res = event_bus
-            .subscribe("topic.*".into(), Box::new(counter.clone()))
+            .subscribe("topic.*", Box::new(counter.clone()))
             .await;
-        assert!(!res.is_err());
+        assert!(res.is_ok());
 
         // Publish
         let event = Event::create("entity#01", "topic.code", &1).unwrap();
 
         let res = event_bus.publish(&[event]).await;
-        assert!(!res.is_err());
+        assert!(res.is_ok());
 
         assert_eq!(*counter.count.lock().await, 2);
 
         let event = Event::create("entity#02", "topic.code", &2).unwrap();
 
         let res = event_bus.publish(&[event]).await;
-        assert!(!res.is_err());
+        assert!(res.is_ok());
 
         assert_eq!(*counter.count.lock().await, 6);
     }
@@ -146,7 +146,7 @@ mod tests {
         let event = Event::create("entity#01", "increment.code", &1).unwrap();
 
         event_bus
-            .subscribe("increment.*".into(), Box::new(counter.clone()))
+            .subscribe("increment.*", Box::new(counter.clone()))
             .await
             .unwrap();
 

@@ -29,7 +29,7 @@ impl Container {
 
         let clean_config_accesses = CleanConfigAccesses::new(schema_repository.clone());
         event_publisher
-            .subscribe("config.accessed".into(), Box::new(clean_config_accesses))
+            .subscribe("config.accessed", Box::new(clean_config_accesses))
             .await
             .unwrap();
 

@@ -21,7 +21,7 @@ pub trait Subscriber {
 }
 
 // Event
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Event {
     id: String,
     entity_id: String,
@@ -134,7 +134,7 @@ mod tests {
         let event = res.unwrap();
         assert_eq!(event.entity_id(), "entity#01");
         assert_eq!(event.topic(), "topic.code");
-        assert!(event.payload().len() > 0);
+        assert!(!event.payload().is_empty());
     }
 
     #[test]
