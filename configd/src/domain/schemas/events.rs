@@ -1,6 +1,8 @@
-use core_lib::events::Publishable;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
+
+use crate::domain::events::Publishable;
 
 // Schema
 #[derive(Serialize, Deserialize)]
@@ -11,7 +13,7 @@ pub struct SchemaCreated {
 }
 
 impl Publishable for SchemaCreated {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -27,7 +29,7 @@ pub struct SchemaRootPropChanged {
 }
 
 impl Publishable for SchemaRootPropChanged {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -42,7 +44,7 @@ pub struct SchemaDeleted {
 }
 
 impl Publishable for SchemaDeleted {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -54,14 +56,16 @@ impl Publishable for SchemaDeleted {
 // Config
 #[derive(Serialize, Deserialize)]
 pub struct ConfigAccessed {
-    pub id: String,
     pub schema_id: String,
-    pub source: Option<String>,
-    pub instance: Option<String>,
+    pub id: String,
+    pub source: String,
+    pub instance: String,
+    pub timestamp: DateTime<Utc>,
+    pub previous: Option<DateTime<Utc>>,
 }
 
 impl Publishable for ConfigAccessed {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -72,15 +76,16 @@ impl Publishable for ConfigAccessed {
 
 #[derive(Serialize, Deserialize)]
 pub struct ConfigCreated {
-    pub id: String,
     pub schema_id: String,
+    pub id: String,
     pub name: String,
     pub data: JsonValue,
     pub valid: bool,
+    pub password: Option<String>,
 }
 
 impl Publishable for ConfigCreated {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -91,14 +96,14 @@ impl Publishable for ConfigCreated {
 
 #[derive(Serialize, Deserialize)]
 pub struct ConfigDataChanged {
-    pub id: String,
     pub schema_id: String,
+    pub id: String,
     pub data: JsonValue,
     pub valid: bool,
 }
 
 impl Publishable for ConfigDataChanged {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
@@ -108,17 +113,68 @@ impl Publishable for ConfigDataChanged {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ConfigDeleted {
-    pub id: String,
+pub struct ConfigPasswordChanged {
     pub schema_id: String,
+    pub id: String,
+    pub password: String,
+}
+
+impl Publishable for ConfigPasswordChanged {
+    fn entity_id(&self) -> &str {
+        &self.id
+    }
+
+    fn topic(&self) -> &str {
+        "config.password_changed"
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ConfigPasswordDeleted {
+    pub schema_id: String,
+    pub id: String,
+}
+
+impl Publishable for ConfigPasswordDeleted {
+    fn entity_id(&self) -> &str {
+        &self.id
+    }
+
+    fn topic(&self) -> &str {
+        "config.password_deleted"
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ConfigDeleted {
+    pub schema_id: String,
+    pub id: String,
 }
 
 impl Publishable for ConfigDeleted {
-    fn id(&self) -> &str {
+    fn entity_id(&self) -> &str {
         &self.id
     }
 
     fn topic(&self) -> &str {
         "config.deleted"
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ConfigAccessRemoved {
+    pub schema_id: String,
+    pub id: String,
+    pub source: String,
+    pub instance: String,
+}
+
+impl Publishable for ConfigAccessRemoved {
+    fn entity_id(&self) -> &str {
+        &self.id
+    }
+
+    fn topic(&self) -> &str {
+        "config.access_removed"
     }
 }

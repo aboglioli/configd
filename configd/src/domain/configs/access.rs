@@ -1,6 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
 
-use crate::domain::Id;
+use crate::domain::shared::Id;
 
 #[derive(Debug, Clone)]
 pub struct Access {
@@ -25,8 +25,25 @@ impl Access {
         }
     }
 
+    pub fn unknown() -> Access {
+        Access::new(
+            Id::new("unknown").unwrap(),
+            Id::new("unknown").unwrap(),
+            Utc::now(),
+            None,
+        )
+    }
+
     pub fn create(source: Id, instance: Id) -> Access {
         Access::new(source, instance, Utc::now(), None)
+    }
+
+    pub fn create_with_source(source: Id) -> Access {
+        Access::new(source, Id::new("unknown").unwrap(), Utc::now(), None)
+    }
+
+    pub fn create_with_instance(instance: Id) -> Access {
+        Access::new(Id::new("unknown").unwrap(), instance, Utc::now(), None)
     }
 
     pub fn source(&self) -> &Id {
@@ -60,6 +77,10 @@ impl Access {
 
     pub fn elapsed_time_from_previous(&self) -> Option<Duration> {
         self.previous.map(|previous| self.timestamp - previous)
+    }
+
+    pub fn equals(&self, other: &Access) -> bool {
+        self.source == other.source && self.instance == other.instance
     }
 }
 

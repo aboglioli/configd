@@ -16,7 +16,7 @@ use crate::{
         ValidateConfigCommand,
     },
     container::Container,
-    domain::{Error, Reason},
+    domain::{errors::Error, values::Reason},
 };
 
 // Error

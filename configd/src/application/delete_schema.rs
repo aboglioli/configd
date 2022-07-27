@@ -1,8 +1,7 @@
-use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, SchemaRepository};
+use crate::domain::{errors::Error, events::Publisher, schemas::SchemaRepository, shared::Id};
 
 #[derive(Deserialize)]
 pub struct DeleteSchemaCommand {
@@ -39,10 +38,7 @@ impl DeleteSchema {
 
             self.schema_repository.delete(&schema_id).await?;
 
-            self.event_publisher
-                .publish(&schema.events())
-                .await
-                .map_err(Error::Core)?;
+            self.event_publisher.publish(&schema.events()).await?;
 
             return Ok(DeleteSchemaResponse {
                 schema_id: schema_id.to_string(),

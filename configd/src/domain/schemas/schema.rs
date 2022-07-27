@@ -1,13 +1,17 @@
 use async_trait::async_trait;
-use core_lib::{
-    events::{Event, EventCollector},
-    models::{Timestamps, Version},
-};
 use std::collections::HashMap;
 
 use crate::domain::{
-    Config, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted, Error, Id, Page,
-    Password, Prop, SchemaCreated, SchemaDeleted, SchemaRootPropChanged, Value,
+    configs::{Access, Config, Password},
+    errors::Error,
+    events::{Event, EventCollector},
+    schemas::{
+        ConfigAccessRemoved, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted,
+        ConfigPasswordChanged, ConfigPasswordDeleted, SchemaCreated, SchemaDeleted,
+        SchemaRootPropChanged,
+    },
+    shared::{Id, Page, Timestamps, Version},
+    values::{Prop, Value},
 };
 
 #[async_trait]
@@ -70,14 +74,11 @@ impl Schema {
             Some(EventCollector::create()),
         )?;
 
-        schema
-            .event_collector
-            .record(SchemaCreated {
-                id: schema.id().to_string(),
-                name: schema.name().to_string(),
-                root_prop: schema.root_prop().clone().try_into()?,
-            })
-            .map_err(Error::Core)?;
+        schema.event_collector.record(SchemaCreated {
+            id: schema.id().to_string(),
+            name: schema.name().to_string(),
+            root_prop: schema.root_prop().clone().try_into()?,
+        })?;
 
         Ok(schema)
     }
@@ -110,6 +111,10 @@ impl Schema {
         self.event_collector.drain()
     }
 
+    pub fn all_events(&self) -> &[Event] {
+        self.event_collector.all()
+    }
+
     // Mutations
     pub fn change_root_prop(&mut self, prop: Prop) -> Result<(), Error> {
         self.root_prop = prop;
@@ -121,12 +126,10 @@ impl Schema {
             }
         }
 
-        self.event_collector
-            .record(SchemaRootPropChanged {
-                id: self.id.to_string(),
-                root_prop: self.root_prop.clone().try_into()?,
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(SchemaRootPropChanged {
+            id: self.id.to_string(),
+            root_prop: self.root_prop.clone().try_into()?,
+        })?;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
@@ -137,34 +140,30 @@ impl Schema {
     pub fn get_config(
         &mut self,
         id: &Id,
-        source: Option<Id>,
-        instance: Option<Id>,
+        access: Access,
         password: Option<&Password>,
     ) -> Result<Config, Error> {
-        if let Some(config) = self.configs.get_mut(id) {
-            if !config.can_access(password) {
-                return Err(Error::Unauthorized);
-            }
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
 
-            self.event_collector
-                .record(ConfigAccessed {
-                    id: config.id().to_string(),
-                    schema_id: self.id.to_string(),
-                    source: source.as_ref().map(|source| source.to_string()),
-                    instance: instance.as_ref().map(|instance| instance.to_string()),
-                })
-                .map_err(Error::Core)?;
-
-            config.register_access(
-                source.unwrap_or_else(|| Id::new("unknown").unwrap()),
-                instance.unwrap_or_else(|| Id::new("unknown").unwrap()),
-            );
+        if !config.can_access(password) {
+            return Err(Error::Unauthorized);
         }
 
-        self.configs
-            .get(id)
-            .map(Clone::clone)
-            .ok_or_else(|| Error::ConfigNotFound(id.clone()))
+        let last_access = config.register_access(access);
+
+        self.event_collector.record(ConfigAccessed {
+            schema_id: self.id.to_string(),
+            id: id.to_string(),
+            source: last_access.source().to_string(),
+            instance: last_access.instance().to_string(),
+            timestamp: *last_access.timestamp(),
+            previous: last_access.previous().copied(),
+        })?;
+
+        Ok(config.clone())
     }
 
     pub fn populate_config(&self, config: &Config) -> Value {
@@ -190,15 +189,14 @@ impl Schema {
 
         let config = Config::create(id, name, data, diff.is_empty(), password)?;
 
-        self.event_collector
-            .record(ConfigCreated {
-                id: config.id().to_string(),
-                schema_id: self.id.to_string(),
-                name: config.name().to_string(),
-                data: config.data().into(),
-                valid: config.is_valid(),
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(ConfigCreated {
+            schema_id: self.id.to_string(),
+            id: config.id().to_string(),
+            name: config.name().to_string(),
+            data: config.data().into(),
+            valid: config.is_valid(),
+            password: config.password().map(ToString::to_string),
+        })?;
 
         self.configs.insert(config.id().clone(), config);
 
@@ -214,34 +212,33 @@ impl Schema {
         data: Value,
         password: Option<&Password>,
     ) -> Result<(), Error> {
-        if let Some(config) = self.configs.get_mut(id) {
-            if !config.can_access(password) {
-                return Err(Error::Unauthorized);
-            }
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
 
-            let diff = self.root_prop.validate(&data);
-            if !diff.is_empty() {
-                return Err(Error::InvalidConfig(diff));
-            }
-
-            config.change_data(data, diff.is_empty())?;
-
-            self.event_collector
-                .record(ConfigDataChanged {
-                    id: config.id().to_string(),
-                    schema_id: self.id.to_string(),
-                    data: config.data().into(),
-                    valid: config.is_valid(),
-                })
-                .map_err(Error::Core)?;
-
-            self.timestamps = self.timestamps.update();
-            self.version = self.version.incr();
-
-            return Ok(());
+        if !config.can_access(password) {
+            return Err(Error::Unauthorized);
         }
 
-        Err(Error::ConfigNotFound(id.clone()))
+        let diff = self.root_prop.validate(&data);
+        if !diff.is_empty() {
+            return Err(Error::InvalidConfig(diff));
+        }
+
+        config.change_data(data, diff.is_empty())?;
+
+        self.event_collector.record(ConfigDataChanged {
+            schema_id: self.id.to_string(),
+            id: config.id().to_string(),
+            data: config.data().into(),
+            valid: config.is_valid(),
+        })?;
+
+        self.timestamps = self.timestamps.update();
+        self.version = self.version.incr();
+
+        Ok(())
     }
 
     pub fn change_config_password(
@@ -250,13 +247,20 @@ impl Schema {
         old_password: Option<&Password>,
         new_password: Password,
     ) -> Result<(), Error> {
-        if let Some(config) = self.configs.get_mut(id) {
-            config.change_password(old_password, new_password)?;
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
 
-            return Ok(());
-        }
+        config.change_password(old_password, new_password)?;
 
-        Err(Error::ConfigNotFound(id.clone()))
+        self.event_collector.record(ConfigPasswordChanged {
+            schema_id: self.id.to_string(),
+            id: config.id().to_string(),
+            password: config.password().unwrap().to_string(),
+        })?;
+
+        Ok(())
     }
 
     pub fn delete_config_password(
@@ -264,32 +268,57 @@ impl Schema {
         id: &Id,
         password: Option<&Password>,
     ) -> Result<(), Error> {
-        if let Some(config) = self.configs.get_mut(id) {
-            config.delete_password(password)?;
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
 
-            return Ok(());
+        config.delete_password(password)?;
+
+        self.event_collector.record(ConfigPasswordDeleted {
+            schema_id: self.id.to_string(),
+            id: config.id().to_string(),
+        })?;
+
+        Ok(())
+    }
+
+    pub fn clean_config_accesses(&mut self, id: &Id) -> Result<(), Error> {
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
+
+        let removed_accesses = config.clean_old_accesses();
+
+        for access in removed_accesses.into_iter() {
+            self.event_collector.record(ConfigAccessRemoved {
+                id: config.id().to_string(),
+                schema_id: self.id.to_string(),
+                source: access.source().to_string(),
+                instance: access.instance().to_string(),
+            })?;
         }
 
-        Err(Error::ConfigNotFound(id.clone()))
+        Ok(())
     }
 
     pub fn delete_config(&mut self, id: &Id, password: Option<&Password>) -> Result<(), Error> {
-        if let Some(config) = self.configs.get(id) {
-            if !config.can_access(password) {
-                return Err(Error::Unauthorized);
-            }
-        } else {
-            return Err(Error::ConfigNotFound(id.clone()));
+        let config = self
+            .configs
+            .get_mut(id)
+            .ok_or_else(|| Error::ConfigNotFound(id.clone()))?;
+
+        if !config.can_access(password) {
+            return Err(Error::Unauthorized);
         }
 
         self.configs.remove(id);
 
-        self.event_collector
-            .record(ConfigDeleted {
-                id: id.to_string(),
-                schema_id: self.id.to_string(),
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(ConfigDeleted {
+            id: id.to_string(),
+            schema_id: self.id.to_string(),
+        })?;
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
@@ -302,11 +331,9 @@ impl Schema {
             return Err(Error::SchemaContainsConfigs(self.id.clone()));
         }
 
-        self.event_collector
-            .record(SchemaDeleted {
-                id: self.id.to_string(),
-            })
-            .map_err(Error::Core)?;
+        self.event_collector.record(SchemaDeleted {
+            id: self.id.to_string(),
+        })?;
 
         self.timestamps = self.timestamps.delete();
 
@@ -320,7 +347,7 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use crate::domain::{Interval, Value};
+    use crate::domain::values::{Interval, Value};
 
     #[test]
     fn create() {
@@ -432,7 +459,9 @@ mod tests {
             .unwrap();
 
         // Get config
-        let config = schema.get_config(&config_id, None, None, None).unwrap();
+        let config = schema
+            .get_config(&config_id, Access::unknown(), None)
+            .unwrap();
 
         assert_eq!(config.id(), &config_id);
         assert_eq!(config.name(), "Config 01");

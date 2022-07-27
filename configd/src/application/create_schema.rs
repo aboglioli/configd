@@ -1,9 +1,13 @@
-use core_lib::events::Publisher;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-use crate::domain::{Error, Id, Schema, SchemaRepository};
+use crate::domain::{
+    errors::Error,
+    events::Publisher,
+    schemas::{Schema, SchemaRepository},
+    shared::Id,
+};
 
 #[derive(Deserialize)]
 pub struct CreateSchemaCommand {
@@ -45,10 +49,7 @@ impl CreateSchema {
 
         self.schema_repository.save(&mut schema).await?;
 
-        self.event_publisher
-            .publish(&schema.events())
-            .await
-            .map_err(Error::Core)?;
+        self.event_publisher.publish(&schema.events()).await?;
 
         Ok(CreateSchemaResponse {
             id: schema.id().to_string(),

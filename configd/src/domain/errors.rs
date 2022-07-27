@@ -1,6 +1,9 @@
 use thiserror::Error;
 
-use crate::domain::{Diff, Id, Kind};
+use crate::domain::{
+    shared::Id,
+    values::{Diff, Kind},
+};
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -11,6 +14,10 @@ pub enum Error {
     EmptyName,
     #[error("empty interval")]
     EmptyInterval,
+    #[error("invalid timestamps")]
+    InvalidTimestamps,
+    #[error("invalid version")]
+    InvalidVersion,
     #[error("unauthorized")]
     Unauthorized,
 
@@ -42,11 +49,13 @@ pub enum Error {
     #[error("invalid config")]
     InvalidConfig(Diff),
 
+    // Events
+    #[error("invalid event")]
+    InvalidEvent,
+
     // External
     #[error("serde: {0}")]
     Serde(#[source] serde_json::Error),
-    #[error("core lib: {0}")]
-    Core(#[source] core_lib::errors::Error),
     #[error("database error: {0}")]
     Database(#[source] sqlx::Error),
 }
@@ -57,6 +66,8 @@ impl Error {
             Error::EmptyId => "empty_id",
             Error::EmptyName => "empty_name",
             Error::EmptyInterval => "empty_interval",
+            Error::InvalidTimestamps => "invalid_timestamps",
+            Error::InvalidVersion => "invalid_version",
             Error::Unauthorized => "unauthorized",
 
             Error::MismatchedKinds { .. } => "mismatched_kinds",
@@ -73,8 +84,9 @@ impl Error {
 
             Error::InvalidConfig(_) => "invalid_config",
 
+            Error::InvalidEvent => "invalid_event",
+
             Error::Serde(_) => "serde",
-            Error::Core(_) => "core_lib",
             Error::Database(_) => "database",
         }
     }

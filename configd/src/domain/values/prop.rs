@@ -1,14 +1,10 @@
 use regex::Regex;
 use std::collections::BTreeMap;
 
-use crate::domain::{Diff, Error, Interval, Kind, Reason, Value};
-
-pub trait PropConverter<T> {
-    type Error;
-
-    fn from(&self, props: T) -> Result<Prop, Self::Error>;
-    fn to(&self, prop: Prop) -> Result<T, Self::Error>;
-}
+use crate::domain::{
+    errors::Error,
+    values::{Diff, Interval, Kind, Reason, Value},
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Prop {

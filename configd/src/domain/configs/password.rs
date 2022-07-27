@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
 use std::fmt;
 
-use crate::domain::Error;
+use crate::domain::errors::Error;
 
 #[derive(Debug, Clone)]
 pub struct Password {

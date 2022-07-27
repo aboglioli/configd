@@ -1,4 +1,4 @@
-use crate::domain::Error;
+use crate::domain::errors::Error;
 
 pub struct Page<T> {
     offset: u64,

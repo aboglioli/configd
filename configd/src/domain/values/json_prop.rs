@@ -2,7 +2,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value as JsonValue};
 use std::collections::BTreeMap;
 
-use crate::domain::{Error, Interval, Prop, Value};
+use crate::domain::{
+    errors::Error,
+    values::{Interval, Prop, Value},
+};
 
 const SCHEMA_KEY: &str = "$schema";
 
