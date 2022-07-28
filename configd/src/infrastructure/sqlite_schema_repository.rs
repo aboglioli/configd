@@ -9,7 +9,7 @@ use crate::{
         schemas::{
             ConfigAccessRemoved, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted,
             ConfigPasswordChanged, ConfigPasswordDeleted, Schema, SchemaCreated, SchemaRepository,
-            SchemaRootPropChanged,
+            SchemaRootPropChanged, SchemaDeleted,
         },
         shared::{Id, Page},
     },
@@ -173,6 +173,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
     async fn save(&self, schema: &mut Schema) -> Result<(), Error> {
         for event in schema.all_events() {
             let query = match event.topic() {
+                // Schemas
                 "schema.created" => {
                     let payload: SchemaCreated = event.deserialize_payload().unwrap();
 
@@ -211,48 +212,18 @@ impl SchemaRepository for SQLiteSchemaRepository {
                     .bind(payload.root_prop)
                     .bind(event.timestamp())
                 }
-                "config.accessed" => {
-                    let payload: ConfigAccessed = event.deserialize_payload().unwrap();
+                "schema.deleted" => {
+                    let payload: SchemaDeleted = event.deserialize_payload().unwrap();
 
-                    if let Some(previous) = payload.previous {
-                        sqlx::query(
-                            "
-                            UPDATE accesses
-                            SET
-                                timestamp = $5,
-                                previous = $6
-                            WHERE
-                                schema_id = $1
-                                AND id = $2
-                                AND source = $3
-                                AND instance = $4
-                            ",
-                        )
-                        .bind(payload.schema_id)
-                        .bind(payload.id)
-                        .bind(payload.source)
-                        .bind(payload.instance)
-                        .bind(payload.timestamp)
-                        .bind(previous)
-                    } else {
-                        sqlx::query(
-                            "
-                            INSERT INTO accesses(
-                                schema_id,
-                                id,
-                                source,
-                                instance,
-                                timestamp
-                            ) VALUES ($1, $2, $3, $4, $5)
-                            ",
-                        )
-                        .bind(payload.schema_id)
-                        .bind(payload.id)
-                        .bind(payload.source)
-                        .bind(payload.instance)
-                        .bind(payload.timestamp)
-                    }
+                    sqlx::query(
+                        "
+                        DELETE FROM schemas
+                        WHERE id = $1
+                        ",
+                    )
+                    .bind(payload.id)
                 }
+                // Configs
                 "config.created" => {
                     let payload: ConfigCreated = event.deserialize_payload().unwrap();
 
@@ -350,6 +321,49 @@ impl SchemaRepository for SQLiteSchemaRepository {
                     .bind(payload.schema_id)
                     .bind(payload.id)
                 }
+                // Accesses
+                "config.accessed" => {
+                    let payload: ConfigAccessed = event.deserialize_payload().unwrap();
+
+                    if let Some(previous) = payload.previous {
+                        sqlx::query(
+                            "
+                            UPDATE accesses
+                            SET
+                                timestamp = $5,
+                                previous = $6
+                            WHERE
+                                schema_id = $1
+                                AND id = $2
+                                AND source = $3
+                                AND instance = $4
+                            ",
+                        )
+                        .bind(payload.schema_id)
+                        .bind(payload.id)
+                        .bind(payload.source)
+                        .bind(payload.instance)
+                        .bind(payload.timestamp)
+                        .bind(previous)
+                    } else {
+                        sqlx::query(
+                            "
+                            INSERT INTO accesses(
+                                schema_id,
+                                id,
+                                source,
+                                instance,
+                                timestamp
+                            ) VALUES ($1, $2, $3, $4, $5)
+                            ",
+                        )
+                        .bind(payload.schema_id)
+                        .bind(payload.id)
+                        .bind(payload.source)
+                        .bind(payload.instance)
+                        .bind(payload.timestamp)
+                    }
+                }
                 "config.access_removed" => {
                     let payload: ConfigAccessRemoved = event.deserialize_payload().unwrap();
 
@@ -378,64 +392,6 @@ impl SchemaRepository for SQLiteSchemaRepository {
 
             query.execute(&self.pool).await.map_err(Error::Database)?;
         }
-
-        // let is_new = schema.timestamps().created_at() == schema.timestamps().updated_at();
-        //
-        // let sqlite_schema = SqliteSchema::from_domain(schema)?;
-        //
-        // let query = if is_new {
-        //     sqlx::query(
-        //         "
-        //         INSERT INTO schemas(
-        //             id,
-        //             name,
-        //             root_prop,
-        //             configs,
-        //             created_at,
-        //             updated_at,
-        //             version
-        //         ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-        //         ",
-        //     )
-        //     .bind(sqlite_schema.id)
-        //     .bind(sqlite_schema.name)
-        //     .bind(sqlite_schema.root_prop)
-        //     .bind(sqlite_schema.configs)
-        //     .bind(sqlite_schema.created_at)
-        //     .bind(sqlite_schema.updated_at)
-        //     .bind(sqlite_schema.version)
-        // } else {
-        //     sqlx::query(
-        //         "
-        //         UPDATE schemas
-        //         SET
-        //             name = $2,
-        //             root_prop = $3,
-        //             configs = $4,
-        //             updated_at = $5,
-        //             version = $6
-        //         WHERE id = $1
-        //         ",
-        //     )
-        //     .bind(sqlite_schema.id)
-        //     .bind(sqlite_schema.name)
-        //     .bind(sqlite_schema.root_prop)
-        //     .bind(sqlite_schema.configs)
-        //     .bind(sqlite_schema.updated_at)
-        //     .bind(sqlite_schema.version)
-        // };
-        //
-        // query.execute(&self.pool).await.map_err(Error::Database)?;
-
-        Ok(())
-    }
-
-    async fn delete(&self, id: &Id) -> Result<(), Error> {
-        sqlx::query("DELETE FROM schemas WHERE id = $1")
-            .bind(id.value())
-            .execute(&self.pool)
-            .await
-            .map_err(Error::Database)?;
 
         Ok(())
     }

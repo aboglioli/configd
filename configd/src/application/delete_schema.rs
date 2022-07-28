@@ -36,7 +36,7 @@ impl DeleteSchema {
         if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
             schema.delete()?;
 
-            self.schema_repository.delete(&schema_id).await?;
+            self.schema_repository.save(&mut schema).await?;
 
             self.event_publisher.publish(&schema.events()).await?;
 
