@@ -44,23 +44,25 @@ impl ChangeConfigPassword {
     ) -> Result<ChangeConfigPasswordResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            let config_id = Id::new(cmd.config_id)?;
-            let old_password = cmd.old_password.map(Password::new).transpose()?;
-            let new_password = Password::new(cmd.new_password)?;
+        let mut schema = self
+            .schema_repository
+            .find_by_id(&schema_id)
+            .await?
+            .ok_or_else(|| Error::SchemaNotFound(schema_id.clone()))?;
 
-            schema.change_config_password(&config_id, old_password.as_ref(), new_password)?;
+        let config_id = Id::new(cmd.config_id)?;
+        let old_password = cmd.old_password.map(Password::new).transpose()?;
+        let new_password = Password::new(cmd.new_password)?;
 
-            self.schema_repository.save(&mut schema).await?;
+        schema.change_config_password(&config_id, old_password.as_ref(), new_password)?;
 
-            self.event_publisher.publish(&schema.events()).await?;
+        self.schema_repository.save(&mut schema).await?;
 
-            return Ok(ChangeConfigPasswordResponse {
-                schema_id: schema_id.to_string(),
-                config_id: config_id.to_string(),
-            });
-        }
+        self.event_publisher.publish(&schema.events()).await?;
 
-        Err(Error::SchemaNotFound(schema_id))
+        Ok(ChangeConfigPasswordResponse {
+            schema_id: schema_id.to_string(),
+            config_id: config_id.to_string(),
+        })
     }
 }

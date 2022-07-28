@@ -40,22 +40,24 @@ impl CreateConfig {
     pub async fn exec(&self, cmd: CreateConfigCommand) -> Result<CreateConfigResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            let config_id = Id::slug(&cmd.name)?;
-            let password = cmd.password.map(Password::new).transpose()?;
+        let mut schema = self
+            .schema_repository
+            .find_by_id(&schema_id)
+            .await?
+            .ok_or_else(|| Error::SchemaNotFound(schema_id.clone()))?;
 
-            schema.add_config(config_id.clone(), cmd.name, cmd.data.into(), password)?;
+        let config_id = Id::slug(&cmd.name)?;
+        let password = cmd.password.map(Password::new).transpose()?;
 
-            self.schema_repository.save(&mut schema).await?;
+        schema.add_config(config_id.clone(), cmd.name, cmd.data.into(), password)?;
 
-            self.event_publisher.publish(&schema.events()).await?;
+        self.schema_repository.save(&mut schema).await?;
 
-            return Ok(CreateConfigResponse {
-                schema_id: schema_id.to_string(),
-                config_id: config_id.to_string(),
-            });
-        }
+        self.event_publisher.publish(&schema.events()).await?;
 
-        Err(Error::SchemaNotFound(schema_id))
+        Ok(CreateConfigResponse {
+            schema_id: schema_id.to_string(),
+            config_id: config_id.to_string(),
+        })
     }
 }

@@ -28,14 +28,16 @@ impl ValidateConfig {
     pub async fn exec(&self, cmd: ValidateConfigCommand) -> Result<ValidateConfigResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            let diff = schema.root_prop().validate(&cmd.data.into());
+        let schema = self
+            .schema_repository
+            .find_by_id(&schema_id)
+            .await?
+            .ok_or_else(|| Error::SchemaNotFound(schema_id.clone()))?;
 
-            return Ok(ValidateConfigResponse {
-                diffs: diff.diffs().clone(),
-            });
-        }
+        let diff = schema.root_prop().validate(&cmd.data.into());
 
-        Err(Error::SchemaNotFound(schema_id))
+        Ok(ValidateConfigResponse {
+            diffs: diff.diffs().clone(),
+        })
     }
 }

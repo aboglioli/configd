@@ -25,12 +25,12 @@ impl Handler for RevalidateConfigs {
             let payload: SchemaRootPropChanged = event.deserialize_payload()?;
 
             let schema_id = Id::new(payload.id).unwrap();
+
             let mut schema = self
                 .schema_repository
                 .find_by_id(&schema_id)
-                .await
-                .unwrap()
-                .unwrap();
+                .await?
+                .ok_or_else(|| Error::SchemaNotFound(schema_id.clone()))?;
 
             schema.revalidate_configs()?;
 
