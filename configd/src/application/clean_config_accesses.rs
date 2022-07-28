@@ -3,18 +3,25 @@ use std::sync::Arc;
 
 use crate::domain::{
     errors::Error,
-    events::{Event, Handler},
+    events::{Event, Handler, Publisher},
     schemas::{ConfigAccessed, SchemaRepository},
     shared::Id,
 };
 
 pub struct CleanConfigAccesses {
+    event_publisher: Arc<dyn Publisher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl CleanConfigAccesses {
-    pub fn new(schema_repository: Arc<dyn SchemaRepository + Sync + Send>) -> CleanConfigAccesses {
-        CleanConfigAccesses { schema_repository }
+    pub fn new(
+        event_publisher: Arc<dyn Publisher + Sync + Send>,
+        schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
+    ) -> CleanConfigAccesses {
+        CleanConfigAccesses {
+            event_publisher,
+            schema_repository,
+        }
     }
 }
 
@@ -36,6 +43,8 @@ impl Handler for CleanConfigAccesses {
             schema.clean_config_accesses(&config_id)?;
 
             self.schema_repository.save(&mut schema).await?;
+
+            self.event_publisher.publish(&schema.events()).await?;
         }
 
         Ok(())

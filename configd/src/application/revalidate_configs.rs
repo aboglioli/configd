@@ -3,18 +3,25 @@ use std::sync::Arc;
 
 use crate::domain::{
     errors::Error,
-    events::{Event, Handler},
+    events::{Event, Handler, Publisher},
     schemas::{SchemaRepository, SchemaRootPropChanged},
     shared::Id,
 };
 
 pub struct RevalidateConfigs {
+    event_publisher: Arc<dyn Publisher + Sync + Send>,
     schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
 }
 
 impl RevalidateConfigs {
-    pub fn new(schema_repository: Arc<dyn SchemaRepository + Sync + Send>) -> RevalidateConfigs {
-        RevalidateConfigs { schema_repository }
+    pub fn new(
+        event_publisher: Arc<dyn Publisher + Sync + Send>,
+        schema_repository: Arc<dyn SchemaRepository + Sync + Send>,
+    ) -> RevalidateConfigs {
+        RevalidateConfigs {
+            event_publisher,
+            schema_repository,
+        }
     }
 }
 
@@ -35,6 +42,8 @@ impl Handler for RevalidateConfigs {
             schema.revalidate_configs()?;
 
             self.schema_repository.save(&mut schema).await.unwrap();
+
+            self.event_publisher.publish(&schema.events()).await?;
         }
 
         Ok(())
