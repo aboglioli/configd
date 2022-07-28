@@ -2,7 +2,7 @@ use sqlx::SqlitePool;
 use std::sync::Arc;
 
 use crate::{
-    application::CleanConfigAccesses,
+    application::{CleanConfigAccesses, RevalidateConfigs},
     config::{Config, Storage},
     domain::{errors::Error, events::Subscriber, schemas::SchemaRepository},
     infrastructure::{InMemSchemaRepository, LocalEventBus, SQLiteSchemaRepository},
@@ -30,6 +30,12 @@ impl Container {
         let clean_config_accesses = CleanConfigAccesses::new(schema_repository.clone());
         event_publisher
             .subscribe("config.accessed", Box::new(clean_config_accesses))
+            .await
+            .unwrap();
+
+        let revalidate_configs = RevalidateConfigs::new(schema_repository.clone());
+        event_publisher
+            .subscribe("schema.root_prop_changed", Box::new(revalidate_configs))
             .await
             .unwrap();
 
