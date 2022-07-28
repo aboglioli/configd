@@ -41,6 +41,7 @@ pub struct GetConfigResponse {
     pub data: JsonValue,
     pub valid: bool,
     pub checksum: String,
+    pub requires_password: bool,
     pub accesses: Vec<ConfigAccessDto>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -90,6 +91,7 @@ impl GetConfig {
                 data: data.into(),
                 valid: config.is_valid(),
                 checksum,
+                requires_password: config.password().is_some(),
                 accesses: config
                     .accesses()
                     .iter()
