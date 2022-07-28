@@ -8,8 +8,8 @@ use crate::{
         errors::Error,
         schemas::{
             ConfigAccessRemoved, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted,
-            ConfigPasswordChanged, ConfigPasswordDeleted, Schema, SchemaCreated, SchemaRepository,
-            SchemaRootPropChanged, SchemaDeleted,
+            ConfigPasswordChanged, ConfigPasswordDeleted, ConfigRevalidated, Schema, SchemaCreated,
+            SchemaDeleted, SchemaRepository, SchemaRootPropChanged,
         },
         shared::{Id, Page},
     },
@@ -269,6 +269,25 @@ impl SchemaRepository for SQLiteSchemaRepository {
                     .bind(payload.schema_id)
                     .bind(payload.id)
                     .bind(payload.data)
+                    .bind(payload.valid)
+                    .bind(event.timestamp())
+                }
+                "config.revalidated" => {
+                    let payload: ConfigRevalidated = event.deserialize_payload().unwrap();
+
+                    sqlx::query(
+                        "
+                        UPDATE configs
+                        SET
+                            valid = $3,
+                            updated_at = $4,
+                            version = version + 1
+                        WHERE
+                            schema_id = $1 AND id = $2
+                        ",
+                    )
+                    .bind(payload.schema_id)
+                    .bind(payload.id)
                     .bind(payload.valid)
                     .bind(event.timestamp())
                 }

@@ -60,10 +60,4 @@ impl SchemaRepository for InMemSchemaRepository {
 
         Ok(())
     }
-
-    async fn delete(&self, id: &Id) -> Result<(), Error> {
-        self.items.write().await.remove(id);
-
-        Ok(())
-    }
 }
