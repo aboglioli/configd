@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::collections::HashMap;
 
 use crate::{
@@ -16,12 +16,12 @@ use crate::{
     infrastructure::{SqlxAccess, SqlxConfig, SqlxSchema},
 };
 
-pub struct SQLiteSchemaRepository {
-    pool: SqlitePool,
+pub struct PostgresSchemaRepository {
+    pool: PgPool,
 }
 
-impl SQLiteSchemaRepository {
-    pub async fn new(pool: SqlitePool) -> Result<SQLiteSchemaRepository, Error> {
+impl PostgresSchemaRepository {
+    pub async fn new(pool: PgPool) -> Result<PostgresSchemaRepository, Error> {
         sqlx::query(
             "
             CREATE TABLE IF NOT EXISTS schemas(
@@ -32,7 +32,14 @@ impl SQLiteSchemaRepository {
               updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
               version INTEGER NOT NULL
             );
+            ",
+        )
+        .execute(&pool)
+        .await
+        .map_err(Error::Database)?;
 
+        sqlx::query(
+            "
             CREATE TABLE IF NOT EXISTS configs(
               schema_id VARCHAR(255) NOT NULL,
               id VARCHAR(255) NOT NULL,
@@ -45,7 +52,14 @@ impl SQLiteSchemaRepository {
               version INTEGER NOT NULL,
               PRIMARY KEY (schema_id, id)
             );
+            ",
+        )
+        .execute(&pool)
+        .await
+        .map_err(Error::Database)?;
 
+        sqlx::query(
+            "
             CREATE TABLE IF NOT EXISTS accesses(
               schema_id VARCHAR(255) NOT NULL,
               id VARCHAR(255) NOT NULL,
@@ -61,12 +75,12 @@ impl SQLiteSchemaRepository {
         .await
         .map_err(Error::Database)?;
 
-        Ok(SQLiteSchemaRepository { pool })
+        Ok(PostgresSchemaRepository { pool })
     }
 }
 
 #[async_trait]
-impl SchemaRepository for SQLiteSchemaRepository {
+impl SchemaRepository for PostgresSchemaRepository {
     async fn find(&self, offset: Option<u64>, limit: Option<u64>) -> Result<Page<Schema>, Error> {
         let offset = offset.unwrap_or(0);
         let mut limit = limit.unwrap_or(10);
@@ -81,8 +95,8 @@ impl SchemaRepository for SQLiteSchemaRepository {
                 LIMIT $1 OFFSET $2
            ",
         )
-        .bind(limit as u32)
-        .bind(offset as u32)
+        .bind(limit as i64)
+        .bind(offset as i64)
         .fetch_all(&self.pool)
         .await
         .map_err(Error::Database)?;
@@ -118,7 +132,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
             schemas.push(sqlite_schema.to_domain(configs)?);
         }
 
-        let count: u32 = sqlx::query_scalar("SELECT COUNT(*) FROM schemas")
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM schemas")
             .fetch_one(&self.pool)
             .await
             .map_err(Error::Database)?;

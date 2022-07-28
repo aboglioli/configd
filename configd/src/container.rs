@@ -1,11 +1,13 @@
-use sqlx::SqlitePool;
+use sqlx::{PgPool, SqlitePool};
 use std::sync::Arc;
 
 use crate::{
     application::{CleanConfigAccesses, RevalidateConfigs},
     config::{Config, Storage},
     domain::{errors::Error, events::Subscriber, schemas::SchemaRepository},
-    infrastructure::{InMemSchemaRepository, LocalEventBus, SQLiteSchemaRepository},
+    infrastructure::{
+        InMemSchemaRepository, LocalEventBus, PostgresSchemaRepository, SQLiteSchemaRepository,
+    },
 };
 
 pub struct Container {
@@ -24,6 +26,10 @@ impl Container {
                     .await
                     .map_err(Error::Database)?;
                 Arc::new(SQLiteSchemaRepository::new(sqlite_pool).await?)
+            }
+            Storage::Postgres { ref url } => {
+                let postgres_pool = PgPool::connect(url).await.map_err(Error::Database)?;
+                Arc::new(PostgresSchemaRepository::new(postgres_pool).await?)
             }
         };
 
