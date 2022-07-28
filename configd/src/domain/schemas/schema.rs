@@ -7,8 +7,8 @@ use crate::domain::{
     events::{Event, EventCollector},
     schemas::{
         ConfigAccessRemoved, ConfigAccessed, ConfigCreated, ConfigDataChanged, ConfigDeleted,
-        ConfigPasswordChanged, ConfigPasswordDeleted, SchemaCreated, SchemaDeleted,
-        SchemaRootPropChanged,
+        ConfigPasswordChanged, ConfigPasswordDeleted, ConfigRevalidated, SchemaCreated,
+        SchemaDeleted, SchemaRootPropChanged,
     },
     shared::{Id, Page, Timestamps, Version},
     values::{Prop, Value},
@@ -98,6 +98,11 @@ impl Schema {
         &self.configs
     }
 
+    pub fn populate_config(&self, config: &Config) -> Value {
+        self.root_prop
+            .populate(config.data(), config.accesses().len() as i64)
+    }
+
     pub fn timestamps(&self) -> &Timestamps {
         &self.timestamps
     }
@@ -117,13 +122,6 @@ impl Schema {
     // Mutations
     pub fn change_root_prop(&mut self, prop: Prop) -> Result<(), Error> {
         self.root_prop = prop;
-
-        for config in self.configs.values_mut() {
-            let diff = self.root_prop.validate(config.data());
-            if !diff.is_empty() {
-                config.mark_as_invalid();
-            }
-        }
 
         self.event_collector.record(SchemaRootPropChanged {
             id: self.id.to_string(),
@@ -163,11 +161,6 @@ impl Schema {
         })?;
 
         Ok(config.clone())
-    }
-
-    pub fn populate_config(&self, config: &Config) -> Value {
-        self.root_prop
-            .populate(config.data(), config.accesses().len() as i64)
     }
 
     pub fn add_config(
@@ -236,6 +229,23 @@ impl Schema {
 
         self.timestamps = self.timestamps.update();
         self.version = self.version.incr();
+
+        Ok(())
+    }
+
+    pub fn revalidate_configs(&mut self) -> Result<(), Error> {
+        for config in self.configs.values_mut() {
+            let diff = self.root_prop.validate(config.data());
+            if !diff.is_empty() {
+                config.mark_as_invalid();
+            }
+
+            self.event_collector.record(ConfigRevalidated {
+                schema_id: self.id.to_string(),
+                id: config.id().to_string(),
+                valid: diff.is_empty(),
+            });
+        }
 
         Ok(())
     }
