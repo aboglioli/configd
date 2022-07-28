@@ -20,7 +20,6 @@ pub trait SchemaRepository {
     async fn find_by_id(&self, id: &Id) -> Result<Option<Schema>, Error>;
     async fn exists(&self, id: &Id) -> Result<bool, Error>;
     async fn save(&self, schema: &mut Schema) -> Result<(), Error>;
-    async fn delete(&self, id: &Id) -> Result<(), Error>;
 }
 
 #[derive(Debug, Clone)]

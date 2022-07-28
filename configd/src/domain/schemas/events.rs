@@ -55,26 +55,6 @@ impl Publishable for SchemaDeleted {
 
 // Config
 #[derive(Serialize, Deserialize)]
-pub struct ConfigAccessed {
-    pub schema_id: String,
-    pub id: String,
-    pub source: String,
-    pub instance: String,
-    pub timestamp: DateTime<Utc>,
-    pub previous: Option<DateTime<Utc>>,
-}
-
-impl Publishable for ConfigAccessed {
-    fn entity_id(&self) -> &str {
-        &self.id
-    }
-
-    fn topic(&self) -> &str {
-        "config.accessed"
-    }
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct ConfigCreated {
     pub schema_id: String,
     pub id: String,
@@ -109,6 +89,23 @@ impl Publishable for ConfigDataChanged {
 
     fn topic(&self) -> &str {
         "config.data_changed"
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ConfigRevalidated {
+    pub schema_id: String,
+    pub id: String,
+    pub valid: bool,
+}
+
+impl Publishable for ConfigRevalidated {
+    fn entity_id(&self) -> &str {
+        &self.id
+    }
+
+    fn topic(&self) -> &str {
+        "config.revalidated"
     }
 }
 
@@ -158,6 +155,26 @@ impl Publishable for ConfigDeleted {
 
     fn topic(&self) -> &str {
         "config.deleted"
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ConfigAccessed {
+    pub schema_id: String,
+    pub id: String,
+    pub source: String,
+    pub instance: String,
+    pub timestamp: DateTime<Utc>,
+    pub previous: Option<DateTime<Utc>>,
+}
+
+impl Publishable for ConfigAccessed {
+    fn entity_id(&self) -> &str {
+        &self.id
+    }
+
+    fn topic(&self) -> &str {
+        "config.accessed"
     }
 }
 
