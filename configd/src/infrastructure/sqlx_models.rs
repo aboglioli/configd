@@ -38,7 +38,7 @@ pub struct SqlxConfig {
     pub password: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub version: i64,
+    pub version: i32,
 }
 
 impl SqlxConfig {
@@ -51,7 +51,7 @@ impl SqlxConfig {
             self.password.map(Password::new).transpose()?,
             accesses,
             Timestamps::new(self.created_at, self.updated_at, None)?,
-            Version::new(self.version)?,
+            Version::new(self.version.into())?,
         )
     }
 }
@@ -63,7 +63,7 @@ pub struct SqlxSchema {
     pub root_prop: JsonValue,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub version: i64,
+    pub version: i32,
 }
 
 impl SqlxSchema {
@@ -74,7 +74,7 @@ impl SqlxSchema {
             self.root_prop.try_into()?,
             configs,
             Timestamps::new(self.created_at, self.updated_at, None)?,
-            Version::new(self.version)?,
+            Version::new(self.version.into())?,
             None,
         )
     }
