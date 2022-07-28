@@ -45,30 +45,32 @@ impl GetSchema {
     pub async fn exec(&self, cmd: GetSchemaCommand) -> Result<GetSchemaResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            return Ok(GetSchemaResponse {
-                id: schema.id().to_string(),
-                name: schema.name().to_string(),
-                schema: schema.root_prop().clone().try_into()?,
-                configs: schema
-                    .configs()
-                    .values()
-                    .map(|config| SchemaConfigDto {
-                        id: config.id().to_string(),
-                        name: config.name().to_string(),
-                        valid: config.is_valid(),
-                        checksum: config.data().checksum(),
-                        created_at: *config.timestamps().created_at(),
-                        updated_at: *config.timestamps().updated_at(),
-                        version: config.version().value(),
-                    })
-                    .collect(),
-                created_at: *schema.timestamps().created_at(),
-                updated_at: *schema.timestamps().updated_at(),
-                version: schema.version().value(),
-            });
-        }
+        let schema = self
+            .schema_repository
+            .find_by_id(&schema_id)
+            .await?
+            .ok_or_else(|| Error::SchemaNotFound(schema_id.clone()))?;
 
-        Err(Error::SchemaNotFound(schema_id))
+        Ok(GetSchemaResponse {
+            id: schema.id().to_string(),
+            name: schema.name().to_string(),
+            schema: schema.root_prop().clone().try_into()?,
+            configs: schema
+                .configs()
+                .values()
+                .map(|config| SchemaConfigDto {
+                    id: config.id().to_string(),
+                    name: config.name().to_string(),
+                    valid: config.is_valid(),
+                    checksum: config.data().checksum(),
+                    created_at: *config.timestamps().created_at(),
+                    updated_at: *config.timestamps().updated_at(),
+                    version: config.version().value(),
+                })
+                .collect(),
+            created_at: *schema.timestamps().created_at(),
+            updated_at: *schema.timestamps().updated_at(),
+            version: schema.version().value(),
+        })
     }
 }

@@ -33,18 +33,20 @@ impl DeleteSchema {
     pub async fn exec(&self, cmd: DeleteSchemaCommand) -> Result<DeleteSchemaResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            schema.delete()?;
+        let mut schema = self
+            .schema_repository
+            .find_by_id(&schema_id)
+            .await?
+            .ok_or_else(|| Error::SchemaNotFound(schema_id.clone()))?;
 
-            self.schema_repository.save(&mut schema).await?;
+        schema.delete()?;
 
-            self.event_publisher.publish(&schema.events()).await?;
+        self.schema_repository.save(&mut schema).await?;
 
-            return Ok(DeleteSchemaResponse {
-                schema_id: schema_id.to_string(),
-            });
-        }
+        self.event_publisher.publish(&schema.events()).await?;
 
-        Err(Error::SchemaNotFound(schema_id))
+        Ok(DeleteSchemaResponse {
+            schema_id: schema_id.to_string(),
+        })
     }
 }

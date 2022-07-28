@@ -66,7 +66,7 @@ pub struct ConfigCreated {
 
 impl Publishable for ConfigCreated {
     fn entity_id(&self) -> &str {
-        &self.id
+        &self.schema_id
     }
 
     fn topic(&self) -> &str {
@@ -84,7 +84,7 @@ pub struct ConfigDataChanged {
 
 impl Publishable for ConfigDataChanged {
     fn entity_id(&self) -> &str {
-        &self.id
+        &self.schema_id
     }
 
     fn topic(&self) -> &str {
@@ -101,7 +101,7 @@ pub struct ConfigRevalidated {
 
 impl Publishable for ConfigRevalidated {
     fn entity_id(&self) -> &str {
-        &self.id
+        &self.schema_id
     }
 
     fn topic(&self) -> &str {
@@ -118,7 +118,7 @@ pub struct ConfigPasswordChanged {
 
 impl Publishable for ConfigPasswordChanged {
     fn entity_id(&self) -> &str {
-        &self.id
+        &self.schema_id
     }
 
     fn topic(&self) -> &str {
@@ -134,7 +134,7 @@ pub struct ConfigPasswordDeleted {
 
 impl Publishable for ConfigPasswordDeleted {
     fn entity_id(&self) -> &str {
-        &self.id
+        &self.schema_id
     }
 
     fn topic(&self) -> &str {
@@ -150,7 +150,7 @@ pub struct ConfigDeleted {
 
 impl Publishable for ConfigDeleted {
     fn entity_id(&self) -> &str {
-        &self.id
+        &self.schema_id
     }
 
     fn topic(&self) -> &str {
@@ -170,7 +170,7 @@ pub struct ConfigAccessed {
 
 impl Publishable for ConfigAccessed {
     fn entity_id(&self) -> &str {
-        &self.id
+        &self.schema_id
     }
 
     fn topic(&self) -> &str {
@@ -188,7 +188,7 @@ pub struct ConfigAccessRemoved {
 
 impl Publishable for ConfigAccessRemoved {
     fn entity_id(&self) -> &str {
-        &self.id
+        &self.schema_id
     }
 
     fn topic(&self) -> &str {

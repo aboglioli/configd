@@ -42,22 +42,24 @@ impl UpdateConfig {
     pub async fn exec(&self, cmd: UpdateConfigCommand) -> Result<UpdateConfigResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            let config_id = Id::new(cmd.config_id)?;
-            let password = cmd.password.map(Password::new).transpose()?;
+        let mut schema = self
+            .schema_repository
+            .find_by_id(&schema_id)
+            .await?
+            .ok_or_else(|| Error::SchemaNotFound(schema_id.clone()))?;
 
-            schema.update_config(&config_id, cmd.data.into(), password.as_ref())?;
+        let config_id = Id::new(cmd.config_id)?;
+        let password = cmd.password.map(Password::new).transpose()?;
 
-            self.schema_repository.save(&mut schema).await?;
+        schema.update_config(&config_id, cmd.data.into(), password.as_ref())?;
 
-            self.event_publisher.publish(&schema.events()).await?;
+        self.schema_repository.save(&mut schema).await?;
 
-            return Ok(UpdateConfigResponse {
-                schema_id: schema_id.to_string(),
-                config_id: config_id.to_string(),
-            });
-        }
+        self.event_publisher.publish(&schema.events()).await?;
 
-        Err(Error::SchemaNotFound(schema_id))
+        Ok(UpdateConfigResponse {
+            schema_id: schema_id.to_string(),
+            config_id: config_id.to_string(),
+        })
     }
 }

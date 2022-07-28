@@ -67,53 +67,53 @@ impl GetConfig {
     pub async fn exec(&self, cmd: GetConfigCommand) -> Result<GetConfigResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            let config_id = Id::new(cmd.config_id)?;
-            let source = cmd.source.map(Id::new).transpose()?;
-            let instance = cmd.instance.map(Id::new).transpose()?;
-            let password = cmd.password.map(Password::new).transpose()?;
+        let mut schema = self
+            .schema_repository
+            .find_by_id(&schema_id)
+            .await?
+            .ok_or_else(|| Error::SchemaNotFound(schema_id.clone()))?;
 
-            let access = match (source, instance) {
-                (Some(source), Some(instance)) => Access::create(source, instance),
-                (Some(source), None) => Access::create_with_source(source),
-                (None, Some(instance)) => Access::create_with_instance(instance),
-                (None, None) => Access::unknown(),
-            };
+        let config_id = Id::new(cmd.config_id)?;
+        let source = cmd.source.map(Id::new).transpose()?;
+        let instance = cmd.instance.map(Id::new).transpose()?;
+        let password = cmd.password.map(Password::new).transpose()?;
 
-            let config = schema.get_config(&config_id, access, password.as_ref())?;
-            let data = schema.populate_config(&config);
-            let checksum = data.checksum();
+        let access = match (source, instance) {
+            (Some(source), Some(instance)) => Access::create(source, instance),
+            (Some(source), None) => Access::create_with_source(source),
+            (None, Some(instance)) => Access::create_with_instance(instance),
+            (None, None) => Access::unknown(),
+        };
 
-            let res = GetConfigResponse {
-                schema_id: schema_id.to_string(),
-                id: config.id().to_string(),
-                name: config.name().to_string(),
-                data: data.into(),
-                valid: config.is_valid(),
-                checksum,
-                requires_password: config.password().is_some(),
-                accesses: config
-                    .accesses()
-                    .iter()
-                    .map(|access| ConfigAccessDto {
-                        source: access.source().to_string(),
-                        instance: access.instance().to_string(),
-                        timestamp: *access.timestamp(),
-                        previous: access.previous().copied(),
-                    })
-                    .collect(),
-                created_at: *config.timestamps().created_at(),
-                updated_at: *config.timestamps().updated_at(),
-                version: config.version().value(),
-            };
+        let config = schema.get_config(&config_id, access, password.as_ref())?;
+        let data = schema.populate_config(&config);
+        let checksum = data.checksum();
 
-            self.schema_repository.save(&mut schema).await?;
+        self.schema_repository.save(&mut schema).await?;
 
-            self.event_publisher.publish(&schema.events()).await?;
+        self.event_publisher.publish(&schema.events()).await?;
 
-            return Ok(res);
-        }
-
-        Err(Error::SchemaNotFound(schema_id))
+        Ok(GetConfigResponse {
+            schema_id: schema_id.to_string(),
+            id: config.id().to_string(),
+            name: config.name().to_string(),
+            data: data.into(),
+            valid: config.is_valid(),
+            checksum,
+            requires_password: config.password().is_some(),
+            accesses: config
+                .accesses()
+                .iter()
+                .map(|access| ConfigAccessDto {
+                    source: access.source().to_string(),
+                    instance: access.instance().to_string(),
+                    timestamp: *access.timestamp(),
+                    previous: access.previous().copied(),
+                })
+                .collect(),
+            created_at: *config.timestamps().created_at(),
+            updated_at: *config.timestamps().updated_at(),
+            version: config.version().value(),
+        })
     }
 }

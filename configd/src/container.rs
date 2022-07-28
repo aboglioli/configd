@@ -27,13 +27,18 @@ impl Container {
             }
         };
 
-        let clean_config_accesses = CleanConfigAccesses::new(schema_repository.clone());
+        // Handlers
+        let clean_config_accesses =
+            CleanConfigAccesses::new(event_publisher.clone(), schema_repository.clone());
+
+        let revalidate_configs =
+            RevalidateConfigs::new(event_publisher.clone(), schema_repository.clone());
+
+        // Subscriptions
         event_publisher
             .subscribe("config.accessed", Box::new(clean_config_accesses))
             .await
             .unwrap();
-
-        let revalidate_configs = RevalidateConfigs::new(schema_repository.clone());
         event_publisher
             .subscribe("schema.root_prop_changed", Box::new(revalidate_configs))
             .await

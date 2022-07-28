@@ -35,20 +35,20 @@ impl UpdateSchema {
     pub async fn exec(&self, cmd: UpdateSchemaCommand) -> Result<UpdateSchemaResponse, Error> {
         let schema_id = Id::new(cmd.schema_id)?;
 
-        if let Some(mut schema) = self.schema_repository.find_by_id(&schema_id).await? {
-            let prop = cmd.schema.try_into()?;
+        let mut schema = self
+            .schema_repository
+            .find_by_id(&schema_id)
+            .await?
+            .ok_or_else(|| Error::SchemaNotFound(schema_id.clone()))?;
 
-            schema.change_root_prop(prop)?;
+        schema.change_root_prop(cmd.schema.try_into()?)?;
 
-            self.schema_repository.save(&mut schema).await?;
+        self.schema_repository.save(&mut schema).await?;
 
-            self.event_publisher.publish(&schema.events()).await?;
+        self.event_publisher.publish(&schema.events()).await?;
 
-            return Ok(UpdateSchemaResponse {
-                id: schema.id().to_string(),
-            });
-        }
-
-        Err(Error::SchemaNotFound(schema_id))
+        Ok(UpdateSchemaResponse {
+            id: schema.id().to_string(),
+        })
     }
 }
