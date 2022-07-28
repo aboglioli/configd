@@ -33,6 +33,7 @@ impl FromStr for Environment {
 pub enum Storage {
     InMem,
     SQLite { filename: String },
+    Postgres { url: String },
 }
 
 impl FromStr for Storage {
@@ -43,6 +44,10 @@ impl FromStr for Storage {
             "in-mem" => Ok(Storage::InMem),
             "sqlite" => Ok(Storage::SQLite {
                 filename: env::var("SQLITE_FILENAME").unwrap_or("configd.db".to_string()),
+            }),
+            "postgres" => Ok(Storage::Postgres {
+                url: env::var("POSTGRES_URL")
+                    .unwrap_or("postgresql://localhost:5432/configd".to_string()),
             }),
             _ => Err(ConfigError::InvalidStorage(s.to_string())),
         }

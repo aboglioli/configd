@@ -13,7 +13,7 @@ use crate::{
         },
         shared::{Id, Page},
     },
-    infrastructure::{SqliteAccess, SqliteConfig, SqliteSchema},
+    infrastructure::{SqlxAccess, SqlxConfig, SqlxSchema},
 };
 
 pub struct SQLiteSchemaRepository {
@@ -74,7 +74,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
             limit = 25;
         }
 
-        let sqlite_schemas: Vec<SqliteSchema> = sqlx::query_as(
+        let sqlite_schemas: Vec<SqlxSchema> = sqlx::query_as(
             "
                 SELECT *
                 FROM schemas
@@ -89,7 +89,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
 
         let mut schemas = Vec::new();
         for sqlite_schema in sqlite_schemas.into_iter() {
-            let sqlite_configs: Vec<SqliteConfig> =
+            let sqlite_configs: Vec<SqlxConfig> =
                 sqlx::query_as("SELECT * FROM configs WHERE schema_id = $1")
                     .bind(&sqlite_schema.id)
                     .fetch_all(&self.pool)
@@ -98,7 +98,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
 
             let mut configs = HashMap::new();
             for sqlite_config in sqlite_configs.into_iter() {
-                let sqlite_accesses: Vec<SqliteAccess> =
+                let sqlite_accesses: Vec<SqlxAccess> =
                     sqlx::query_as("SELECT * FROM accesses WHERE schema_id = $1 AND id = $2")
                         .bind(&sqlite_schema.id)
                         .bind(&sqlite_config.id)
@@ -108,7 +108,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
 
                 let accesses = sqlite_accesses
                     .into_iter()
-                    .map(SqliteAccess::to_domain)
+                    .map(SqlxAccess::to_domain)
                     .collect::<Result<Vec<Access>, Error>>()?;
 
                 let config = sqlite_config.to_domain(accesses)?;
@@ -127,14 +127,14 @@ impl SchemaRepository for SQLiteSchemaRepository {
     }
 
     async fn find_by_id(&self, id: &Id) -> Result<Option<Schema>, Error> {
-        let sqlite_schema: Option<SqliteSchema> = sqlx::query_as("SELECT * FROM schemas")
+        let sqlite_schema: Option<SqlxSchema> = sqlx::query_as("SELECT * FROM schemas")
             .bind(id.value())
             .fetch_optional(&self.pool)
             .await
             .map_err(Error::Database)?;
 
         if let Some(sqlite_schema) = sqlite_schema {
-            let sqlite_configs: Vec<SqliteConfig> =
+            let sqlite_configs: Vec<SqlxConfig> =
                 sqlx::query_as("SELECT * FROM configs WHERE schema_id = $1")
                     .bind(&sqlite_schema.id)
                     .fetch_all(&self.pool)
@@ -143,7 +143,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
 
             let mut configs = HashMap::new();
             for sqlite_config in sqlite_configs.into_iter() {
-                let sqlite_accesses: Vec<SqliteAccess> =
+                let sqlite_accesses: Vec<SqlxAccess> =
                     sqlx::query_as("SELECT * FROM accesses WHERE schema_id = $1 AND id = $2")
                         .bind(&sqlite_schema.id)
                         .bind(&sqlite_config.id)
@@ -153,7 +153,7 @@ impl SchemaRepository for SQLiteSchemaRepository {
 
                 let accesses = sqlite_accesses
                     .into_iter()
-                    .map(SqliteAccess::to_domain)
+                    .map(SqlxAccess::to_domain)
                     .collect::<Result<Vec<Access>, Error>>()?;
 
                 let config = sqlite_config.to_domain(accesses)?;
