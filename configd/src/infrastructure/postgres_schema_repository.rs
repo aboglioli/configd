@@ -32,7 +32,14 @@ impl PostgresSchemaRepository {
               updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
               version INTEGER NOT NULL
             );
+            ",
+        )
+        .execute(&pool)
+        .await
+        .map_err(Error::Database)?;
 
+        sqlx::query(
+            "
             CREATE TABLE IF NOT EXISTS configs(
               schema_id VARCHAR(255) NOT NULL,
               id VARCHAR(255) NOT NULL,
@@ -45,7 +52,14 @@ impl PostgresSchemaRepository {
               version INTEGER NOT NULL,
               PRIMARY KEY (schema_id, id)
             );
+            ",
+        )
+        .execute(&pool)
+        .await
+        .map_err(Error::Database)?;
 
+        sqlx::query(
+            "
             CREATE TABLE IF NOT EXISTS accesses(
               schema_id VARCHAR(255) NOT NULL,
               id VARCHAR(255) NOT NULL,
