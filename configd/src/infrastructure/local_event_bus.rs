@@ -9,7 +9,7 @@ use crate::domain::{
 
 struct Subscription {
     subject: String,
-    handler: Box<dyn Handler>,
+    handler: Arc<dyn Handler>,
 }
 
 #[derive(Clone)]
@@ -52,7 +52,11 @@ impl Publisher for LocalEventBus {
         for event in events {
             for subscription in subscriptions.iter() {
                 if subject_has_topic(&subscription.subject, event.topic()) {
-                    subscription.handler.handle(event).await?;
+                    let event = event.clone();
+                    let subscription = subscription.handler.clone();
+                    tokio::spawn(async move {
+                        subscription.handle(&event).await.unwrap();
+                    });
                 }
             }
         }
@@ -68,7 +72,7 @@ impl Subscriber for LocalEventBus {
 
         subscriptions.push(Subscription {
             subject: subject.to_string(),
-            handler,
+            handler: handler.into(),
         });
 
         Ok(())
