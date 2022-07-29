@@ -91,11 +91,31 @@ impl Prop {
 
     pub fn float(
         required: bool,
-        default_value: Option<Value>,
-        allowed_values: Option<Vec<Value>>,
+        mut default_value: Option<Value>,
+        mut allowed_values: Option<Vec<Value>>,
         interval: Option<Interval>,
         split: bool,
     ) -> Result<Prop, Error> {
+        default_value = default_value.map(|v| {
+            if let Value::Int(n) = v {
+                Value::Float(n as f64)
+            } else {
+                v
+            }
+        });
+
+        allowed_values = allowed_values.map(|vs| {
+            vs.into_iter()
+                .map(|v| {
+                    if let Value::Int(n) = v {
+                        Value::Float(n as f64)
+                    } else {
+                        v
+                    }
+                })
+                .collect()
+        });
+
         if let Some(default_value) = &default_value {
             if default_value.kind() != Kind::Float {
                 return Err(Error::MismatchedKinds {
