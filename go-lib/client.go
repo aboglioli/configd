@@ -24,6 +24,7 @@ type ConfigdClient struct {
 	url      string
 	source   string
 	instance string
+	password string
 
 	httpClient *http.Client
 	errCh      chan error
@@ -31,27 +32,33 @@ type ConfigdClient struct {
 	lastConfig *Config
 }
 
+type ConfigdConfig struct {
+	Url      string
+	Source   string
+	Instance string
+	Password string
+}
+
 func NewConfigdClient(
-	url string,
-	source string,
-	instance string,
+	cfg ConfigdConfig,
 ) (*ConfigdClient, error) {
-	if url == "" {
+	if cfg.Url == "" {
 		return nil, ErrEmptyUrl
 	}
 
-	if source == "" {
+	if cfg.Source == "" {
 		return nil, ErrEmptySource
 	}
 
-	if instance == "" {
+	if cfg.Instance == "" {
 		return nil, ErrEmptyInstance
 	}
 
 	return &ConfigdClient{
-		url,
-		source,
-		instance,
+		cfg.Url,
+		cfg.Source,
+		cfg.Instance,
+		cfg.Password,
 		http.DefaultClient,
 		make(chan error),
 		nil,
@@ -134,6 +141,9 @@ func (c *ConfigdClient) fetchConfig(
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("X-Configd-Source", c.source)
 	req.Header.Set("X-Configd-Instance", c.instance)
+	if len(c.password) > 0 {
+		req.Header.Set("X-Configd-Password", c.password)
+	}
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {

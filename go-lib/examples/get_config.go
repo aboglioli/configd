@@ -34,11 +34,12 @@ type MyConfig struct {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	client, err := configd.NewConfigdClient(
-		"http://localhost:8080",
-		"Example",
-		randSeq(10),
-	)
+	client, err := configd.NewConfigdClient(configd.ConfigdConfig{
+		Url:      "http://localhost:8080",
+		Source:   "Example",
+		Instance: randSeq(10),
+		Password: "passwd123",
+	})
 	if err != nil {
 		panic(err)
 	}
