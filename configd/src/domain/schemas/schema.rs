@@ -244,7 +244,7 @@ impl Schema {
                 schema_id: self.id.to_string(),
                 id: config.id().to_string(),
                 valid: diff.is_empty(),
-            });
+            })?;
         }
 
         Ok(())
