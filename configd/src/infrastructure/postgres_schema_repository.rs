@@ -185,7 +185,7 @@ impl SchemaRepository for PostgresSchemaRepository {
     }
 
     async fn save(&self, schema: &mut Schema) -> Result<(), Error> {
-        for event in schema.all_events() {
+        for event in schema.events() {
             let query = match event.topic() {
                 // Schemas
                 "schema.created" => {
@@ -358,44 +358,30 @@ impl SchemaRepository for PostgresSchemaRepository {
                 "config.accessed" => {
                     let payload: ConfigAccessed = event.deserialize_payload().unwrap();
 
-                    if let Some(previous) = payload.previous {
-                        sqlx::query(
-                            "
-                            UPDATE accesses
+                    sqlx::query(
+                        "
+                        INSERT INTO accesses(
+                            schema_id,
+                            id,
+                            source,
+                            instance,
+                            timestamp,
+                            previous
+                        ) VALUES ($1, $2, $3, $4, $5, $6)
+                        ON CONFLICT (schema_id, id, source, instance)
+                        DO
+                            UPDATE
                             SET
                                 timestamp = $5,
                                 previous = $6
-                            WHERE
-                                schema_id = $1
-                                AND id = $2
-                                AND source = $3
-                                AND instance = $4
-                            ",
-                        )
-                        .bind(payload.schema_id)
-                        .bind(payload.id)
-                        .bind(payload.source)
-                        .bind(payload.instance)
-                        .bind(payload.timestamp)
-                        .bind(previous)
-                    } else {
-                        sqlx::query(
-                            "
-                            INSERT INTO accesses(
-                                schema_id,
-                                id,
-                                source,
-                                instance,
-                                timestamp
-                            ) VALUES ($1, $2, $3, $4, $5)
-                            ",
-                        )
-                        .bind(payload.schema_id)
-                        .bind(payload.id)
-                        .bind(payload.source)
-                        .bind(payload.instance)
-                        .bind(payload.timestamp)
-                    }
+                        ",
+                    )
+                    .bind(payload.schema_id)
+                    .bind(payload.id)
+                    .bind(payload.source)
+                    .bind(payload.instance)
+                    .bind(payload.timestamp)
+                    .bind(payload.previous)
                 }
                 "config.access_removed" => {
                     let payload: ConfigAccessRemoved = event.deserialize_payload().unwrap();
