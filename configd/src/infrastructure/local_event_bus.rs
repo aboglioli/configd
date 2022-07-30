@@ -14,12 +14,22 @@ struct Subscription {
 
 #[derive(Clone)]
 pub struct LocalEventBus {
+    sync: bool,
+
     subscriptions: Arc<RwLock<Vec<Subscription>>>,
 }
 
 impl LocalEventBus {
-    pub fn new() -> LocalEventBus {
+    pub fn new_sync() -> LocalEventBus {
         LocalEventBus {
+            sync: true,
+            subscriptions: Arc::new(RwLock::new(Vec::new())),
+        }
+    }
+
+    pub fn new_async() -> LocalEventBus {
+        LocalEventBus {
+            sync: false,
             subscriptions: Arc::new(RwLock::new(Vec::new())),
         }
     }
@@ -52,11 +62,15 @@ impl Publisher for LocalEventBus {
         for event in events {
             for subscription in subscriptions.iter() {
                 if subject_has_topic(&subscription.subject, event.topic()) {
-                    let event = event.clone();
-                    let subscription = subscription.handler.clone();
-                    tokio::spawn(async move {
-                        subscription.handle(&event).await.unwrap();
-                    });
+                    if self.sync {
+                        subscription.handler.handle(&event).await?;
+                    } else {
+                        let event = event.clone();
+                        let subscription = subscription.handler.clone();
+                        tokio::spawn(async move {
+                            subscription.handle(&event).await.unwrap();
+                        });
+                    }
                 }
             }
         }
@@ -113,7 +127,7 @@ mod tests {
 
     #[tokio::test]
     async fn subscribe_and_publish() {
-        let event_bus = LocalEventBus::new();
+        let event_bus = LocalEventBus::new_sync();
         let counter = Counter::new();
 
         // Subscriptions
@@ -145,7 +159,7 @@ mod tests {
 
     #[tokio::test]
     async fn thread_safe() {
-        let event_bus = LocalEventBus::new();
+        let event_bus = LocalEventBus::new_sync();
         let counter = Counter::new();
         let event = Event::create("entity#01", "increment.code", &1).unwrap();
 

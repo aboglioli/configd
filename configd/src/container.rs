@@ -17,7 +17,7 @@ pub struct Container {
 
 impl Container {
     pub async fn build(config: &Config) -> Result<Container, Error> {
-        let event_publisher = Arc::new(LocalEventBus::new());
+        let event_publisher = Arc::new(LocalEventBus::new_async());
 
         let schema_repository: Arc<dyn SchemaRepository + Sync + Send> = match config.storage {
             Storage::InMem => Arc::new(InMemSchemaRepository::new()),
