@@ -89,9 +89,12 @@ impl GetConfig {
         let data = schema.populate_config(&config);
         let checksum = data.checksum();
 
-        self.schema_repository.save(&mut schema).await?;
+        self.event_publisher.publish(schema.events()).await?;
 
-        self.event_publisher.publish(&schema.events()).await?;
+        let schema_repository = self.schema_repository.clone();
+        tokio::spawn(async move {
+            schema_repository.save(&mut schema).await.unwrap();
+        });
 
         Ok(GetConfigResponse {
             schema_id: schema_id.to_string(),

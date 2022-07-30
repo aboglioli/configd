@@ -111,11 +111,7 @@ impl Schema {
         &self.version
     }
 
-    pub fn events(&mut self) -> Vec<Event> {
-        self.event_collector.drain()
-    }
-
-    pub fn all_events(&self) -> &[Event] {
+    pub fn events(&self) -> &[Event] {
         self.event_collector.all()
     }
 
