@@ -49,7 +49,7 @@ impl CreateSchema {
 
         self.schema_repository.save(&mut schema).await?;
 
-        self.event_publisher.publish(&schema.events()).await?;
+        self.event_publisher.publish(schema.events()).await?;
 
         Ok(CreateSchemaResponse {
             id: schema.id().to_string(),

@@ -45,7 +45,7 @@ impl UpdateSchema {
 
         self.schema_repository.save(&mut schema).await?;
 
-        self.event_publisher.publish(&schema.events()).await?;
+        self.event_publisher.publish(schema.events()).await?;
 
         Ok(UpdateSchemaResponse {
             id: schema.id().to_string(),

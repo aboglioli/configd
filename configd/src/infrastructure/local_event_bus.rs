@@ -63,7 +63,7 @@ impl Publisher for LocalEventBus {
             for subscription in subscriptions.iter() {
                 if subject_has_topic(&subscription.subject, event.topic()) {
                     if self.sync {
-                        subscription.handler.handle(&event).await?;
+                        subscription.handler.handle(event).await?;
                     } else {
                         let event = event.clone();
                         let subscription = subscription.handler.clone();

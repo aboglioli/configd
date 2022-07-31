@@ -43,7 +43,7 @@ impl Handler for RevalidateConfigs {
 
             self.schema_repository.save(&mut schema).await.unwrap();
 
-            self.event_publisher.publish(&schema.events()).await?;
+            self.event_publisher.publish(schema.events()).await?;
         }
 
         Ok(())

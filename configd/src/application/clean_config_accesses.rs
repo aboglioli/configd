@@ -44,7 +44,7 @@ impl Handler for CleanConfigAccesses {
 
             self.schema_repository.save(&mut schema).await?;
 
-            self.event_publisher.publish(&schema.events()).await?;
+            self.event_publisher.publish(schema.events()).await?;
         }
 
         Ok(())
