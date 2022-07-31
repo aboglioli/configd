@@ -1,6 +1,7 @@
 import { FC, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AiOutlineSave } from 'react-icons/ai';
+import { CgEditBlackPoint } from 'react-icons/cg';
 import dayjs from 'dayjs';
 import { AxiosError } from 'axios';
 
@@ -124,6 +125,7 @@ const ConfigPage: FC<ConfigProps> = ({ setTitle }) => {
         <Subtitle>Accesses</Subtitle>
         {config.accesses.map((access) => (
           <ListItem key={config.id} $bordered $padding={Size.Small}>
+            <CgEditBlackPoint />
             <ListItemContent>
               <Wrapper $verticalAlignment={Alignment.Center} $gap={Size.Small}>
                 <SmallTitle>{access.source}</SmallTitle>

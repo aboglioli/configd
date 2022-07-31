@@ -24,10 +24,11 @@ export interface SchemaService {
   getSchema(schemaId: string): Promise<Schema>;
   updateSchema(schemaId: string, cmd: UpdateSchemaCommand): Promise<UpdateSchemaResponse>;
 
-  getConfig(schemaId: string, configId: string): Promise<Config>;
+  getConfig(schemaId: string, configId: string, password?: string): Promise<Config>;
   updateConfig(
     schemaId: string,
     configId: string,
     cmd: UpdateConfigCommand,
+    password?: string,
   ): Promise<UpdateConfigResponse>;
 }

@@ -12,15 +12,20 @@ import {
 import { Page } from 'domain/page';
 
 export class HttpSchemaService implements SchemaService {
-  constructor(private baseUrl: string) {}
+  constructor(private baseUrl: string, private defaultHeaders: Record<string, string>) {}
 
+  // Schema
   async getSchemas(): Promise<Page<Schema>> {
-    const res = await axios.get(`${this.baseUrl}/schemas`);
+    const res = await axios.get(`${this.baseUrl}/schemas`, {
+      headers: this.defaultHeaders,
+    });
     return res.data;
   }
 
   async getSchema(schemaId: string): Promise<Schema> {
-    const res = await axios.get(`${this.baseUrl}/schemas/${schemaId}`);
+    const res = await axios.get(`${this.baseUrl}/schemas/${schemaId}`, {
+      headers: this.defaultHeaders,
+    });
     return res.data;
   }
 
@@ -28,13 +33,26 @@ export class HttpSchemaService implements SchemaService {
     schemaId: string,
     cmd: UpdateSchemaCommand,
   ): Promise<UpdateSchemaResponse> {
-    const res = await axios.put(`${this.baseUrl}/schemas/${schemaId}`, cmd);
+    const res = await axios.put(`${this.baseUrl}/schemas/${schemaId}`, cmd, {
+      headers: this.defaultHeaders,
+    });
     return res.data;
   }
 
-  async getConfig(schemaId: string, configId: string): Promise<Config> {
+  // Config
+  async getConfig(
+    schemaId: string,
+    configId: string,
+    password?: string,
+  ): Promise<Config> {
     const res = await axios.get(
       `${this.baseUrl}/schemas/${schemaId}/configs/${configId}`,
+      {
+        headers: {
+          ...this.defaultHeaders,
+          ...(password && { 'X-Configd-Password': password }),
+        },
+      },
     );
     return res.data;
   }
@@ -43,10 +61,17 @@ export class HttpSchemaService implements SchemaService {
     schemaId: string,
     configId: string,
     cmd: UpdateConfigCommand,
+    password?: string,
   ): Promise<UpdateConfigResponse> {
     const res = await axios.put(
       `${this.baseUrl}/schemas/${schemaId}/configs/${configId}`,
       cmd,
+      {
+        headers: {
+          ...this.defaultHeaders,
+          ...(password && { 'X-Configd-Password': password }),
+        },
+      },
     );
     return res.data;
   }

@@ -7,7 +7,12 @@ export class Container {
 
   static get(): Container {
     if (!this.container) {
-      this.container = new Container(new HttpSchemaService('http://localhost:8080'));
+      this.container = new Container(
+        new HttpSchemaService('http://localhost:8080', {
+          'X-Configd-Source': 'Configd Web',
+          'X-Configd-Instance': 'v0.1.0',
+        }),
+      );
     }
 
     return this.container;
