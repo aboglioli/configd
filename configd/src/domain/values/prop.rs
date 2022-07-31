@@ -281,6 +281,12 @@ impl Prop {
                                 diff.add(Reason::NotInInterval, None)
                             }
                         }
+                    } else if let Value::Int(value) = value {
+                        if let Some(interval) = interval {
+                            if !interval.validate(*value as f64) {
+                                diff.add(Reason::NotInInterval, None)
+                            }
+                        }
                     } else {
                         diff.add(Reason::NotAFloat, None);
                     }
