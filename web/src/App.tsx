@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 
 import Schemas from 'pages/Schemas';
 import Schema from 'pages/Schema';
+import Config from 'pages/Config';
 import Playground from 'pages/Playground';
 import { Wrapper } from 'styles/Wrapper';
 import { Size } from 'styles/common';
@@ -24,6 +25,10 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Schemas setTitle={setTitle} />} />
           <Route path="/schemas/:schemaId" element={<Schema setTitle={setTitle} />} />
+          <Route
+            path="/schemas/:schemaId/configs/:configId"
+            element={<Config setTitle={setTitle} />}
+          />
           <Route path="/playground" element={<Playground />} />
         </Routes>
       </Wrapper>
