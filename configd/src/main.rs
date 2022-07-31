@@ -23,7 +23,13 @@ async fn main() {
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_headers([header::ACCEPT, header::CONTENT_TYPE])
+        .allow_headers([
+            header::ACCEPT,
+            header::CONTENT_TYPE,
+            header::HeaderName::from_bytes(b"X-Configd-Source").unwrap(),
+            header::HeaderName::from_bytes(b"X-Configd-Instance").unwrap(),
+            header::HeaderName::from_bytes(b"X-Configd-Password").unwrap(),
+        ])
         .allow_origin(Any);
 
     let app = Router::new()
