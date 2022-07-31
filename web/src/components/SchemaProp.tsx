@@ -1,51 +1,51 @@
-import { FC, ChangeEvent, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
+import AceEditor from 'react-ace';
+
+import 'ace-builds/src-noconflict/mode-json';
+import 'ace-builds/src-noconflict/theme-github';
+import 'ace-builds/src-noconflict/ext-language_tools';
 
 import { RootProp } from 'domain/schema';
-import { TextArea, Button } from 'styles/Form';
-import { Size } from 'styles/common';
-import { Wrapper } from 'styles/Wrapper';
 
 export interface SchemaPropProps {
   prop: RootProp;
-  onChange: (rawJson: string, valid: boolean, prop?: RootProp) => void;
+  onChange: (valid: boolean, prop?: RootProp) => void;
 }
 
 export const SchemaProp: FC<SchemaPropProps> = ({ prop, onChange }) => {
-  const [valid, setValid] = useState(true);
-  const [jsonProp, setJsonProp] = useState(JSON.stringify(prop, null, 4));
+  const [json, setJson] = useState(JSON.stringify(prop, null, 2));
+  useEffect(() => {
+    setJson(JSON.stringify(prop, null, 2));
+  }, []);
 
-  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    setJsonProp(event.target.value);
+  const onAceChange = (json: string) => {
+    setJson(json);
 
     try {
-      const newProp = JSON.parse(event.target.value);
-
-      onChange(event.target.value, true, newProp);
-      setValid(true);
+      const prop = JSON.parse(json);
+      onChange(true, prop);
     } catch (err) {
-      onChange(event.target.value, false);
-      setValid(false);
+      onChange(false);
     }
   };
 
-  const format = () => {
-    setJsonProp(JSON.stringify(prop, null, 4));
-    setValid(true);
-  };
-
   return (
-    <Wrapper $vertical>
-      <TextArea
-        $size={Size.Small}
-        style={{
-          backgroundColor: valid ? 'rgba(0, 255, 0, 0.05)' : 'rgba(255, 0, 0, 0.05)',
-        }}
-        value={jsonProp}
-        onChange={handleChange}
-      />
-      <Button $size={Size.Small} onClick={format}>
-        Format
-      </Button>
-    </Wrapper>
+    <AceEditor
+      mode="json"
+      theme="github"
+      name="schema-prop"
+      editorProps={{ $blockScrolling: true }}
+      width="100%"
+      showGutter={true}
+      showPrintMargin={true}
+      value={json}
+      onChange={onAceChange}
+      setOptions={{
+        enableBasicAutocompletion: true,
+        enableLiveAutocompletion: true,
+        enableSnippets: true,
+        tabSize: 2,
+      }}
+    />
   );
 };

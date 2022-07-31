@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { AiOutlineSave } from 'react-icons/ai';
 import { BiEdit } from 'react-icons/bi';
 import dayjs from 'dayjs';
+import { AxiosError } from 'axios';
 
 import { Container } from 'container';
 import { RootProp, Schema } from 'domain/schema';
@@ -31,20 +32,22 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
   const [schemaValid, setSchemaValid] = useState(true);
   const [error, setError] = useState<string>();
 
-  useEffect(() => {
+  const loadSchema = async () => {
     if (schemaId) {
-      (async () => {
-        const res = await schemaService.getSchema(schemaId);
-        setSchema(res);
-      })();
+      const res = await schemaService.getSchema(schemaId);
+      setSchema(res);
     }
+  };
+
+  useEffect(() => {
+    loadSchema();
   }, [schemaId]);
 
   if (!schema) {
     return <b>Loading...</b>;
   }
 
-  const handlePropChange = (_json: string, valid: boolean, prop?: RootProp) => {
+  const handlePropChange = (valid: boolean, prop?: RootProp) => {
     setSchemaValid(valid);
 
     if (valid && prop) {
@@ -55,10 +58,17 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
 
   const handleSchemaSave = async () => {
     try {
-      const res = await schemaService.updateSchema(schema.id, { schema: schema.schema });
-      console.log(res);
+      await schemaService.updateSchema(schema.id, { schema: schema.schema });
       setError('');
+
+      loadSchema();
     } catch (err) {
+      console.error(err);
+      if (err instanceof AxiosError) {
+        setError(err.response?.data?.message);
+        return;
+      }
+
       setError('Invalid schema');
     }
   };
@@ -69,14 +79,6 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
 
   return (
     <Wrapper $vertical $gap={Size.Medium}>
-      <Wrapper $alignment={Alignment.End}>
-        <p style={{ fontSize: '0.8rem' }}>
-          <b>Version</b>: {schema.version} · <b>Created</b>:{' '}
-          {dayjs(schema.created_at).format('DD/MM/YYYY HH:mm')} · <b>Updated</b>:{' '}
-          {dayjs(schema.updated_at).format('DD/MM/YYYY HH:mm')}
-        </p>
-      </Wrapper>
-
       <Wrapper
         $bordered
         $padding={Size.Medium}
@@ -88,6 +90,30 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
           <Title>{schema.name}</Title>
           <SmallTitle>{schema.id}</SmallTitle>
         </Wrapper>
+      </Wrapper>
+
+      <Wrapper $bordered $padding={Size.Medium} $vertical $gap={Size.Small}>
+        <Subtitle>Configs</Subtitle>
+        {schema.configs.map((config) => (
+          <ListItem key={config.id} $bordered $padding={Size.Small}>
+            <ListItemImage src="/gears.png" />
+            <ListItemContent>
+              <Wrapper $verticalAlignment={Alignment.Center} $gap={Size.Small}>
+                <SmallTitle>{config.name}</SmallTitle>
+                <SmallestTitle>{config.id}</SmallestTitle>
+              </Wrapper>
+            </ListItemContent>
+            <ListItemButtons>
+              <ButtonLink
+                to={`/schemas/${schema.id}/configs/${config.id}`}
+                $size={Size.Small}
+              >
+                <BiEdit />
+                View
+              </ButtonLink>
+            </ListItemButtons>
+          </ListItem>
+        ))}
       </Wrapper>
 
       <Wrapper $bordered $padding={Size.Medium} $vertical $gap={Size.Medium}>
@@ -117,28 +143,12 @@ const SchemaPage: FC<SchemaProps> = ({ setTitle }) => {
         )}
       </Wrapper>
 
-      <Wrapper $bordered $padding={Size.Medium} $vertical $gap={Size.Small}>
-        <Subtitle>Configs</Subtitle>
-        {schema.configs.map((config) => (
-          <ListItem key={config.id} $bordered $padding={Size.Small}>
-            <ListItemImage src="/gears.png" />
-            <ListItemContent>
-              <Wrapper $verticalAlignment={Alignment.Center} $gap={Size.Small}>
-                <SmallTitle>{config.name}</SmallTitle>
-                <SmallestTitle>{config.id}</SmallestTitle>
-              </Wrapper>
-            </ListItemContent>
-            <ListItemButtons>
-              <ButtonLink
-                to={`/schemas/${schema.id}/configs/${config.id}`}
-                $size={Size.Small}
-              >
-                <BiEdit />
-                View
-              </ButtonLink>
-            </ListItemButtons>
-          </ListItem>
-        ))}
+      <Wrapper $alignment={Alignment.End}>
+        <p style={{ fontSize: '0.8rem' }}>
+          <b>Version</b>: {schema.version} · <b>Created</b>:{' '}
+          {dayjs(schema.created_at).format('DD/MM/YYYY HH:mm')} · <b>Updated</b>:{' '}
+          {dayjs(schema.updated_at).format('DD/MM/YYYY HH:mm')}
+        </p>
       </Wrapper>
     </Wrapper>
   );
