@@ -25,10 +25,15 @@ type Database struct {
 	Port int64  `json:"port"`
 }
 
+type Limits struct {
+	RateLimit float64    `json:"rate_limit"`
+	Page int64    `json:"page"`
+}
+
 type MyConfig struct {
 	Env       string     `json:"env"`
 	Databases []Database `json:"databases"`
-	RateLimit float64    `json:"rate_limit"`
+	Limits Limits `json:"limits"`
 }
 
 func main() {

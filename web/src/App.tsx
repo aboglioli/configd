@@ -8,6 +8,7 @@ import Playground from 'pages/Playground';
 import { Wrapper } from 'styles/Wrapper';
 import { Size } from 'styles/common';
 import { Header, HeaderLogo, HeaderTitle, HeaderSubtitle } from 'styles/Header';
+import { Link } from 'styles/Link';
 
 import './App.css';
 
@@ -17,7 +18,9 @@ const App = () => {
   return (
     <>
       <Header>
-        <HeaderLogo src="/logo.png" />
+        <Link to="/">
+          <HeaderLogo src="/logo.png" />
+        </Link>
         <HeaderTitle>Configd</HeaderTitle>
         {title && <HeaderSubtitle>{title}</HeaderSubtitle>}
       </Header>

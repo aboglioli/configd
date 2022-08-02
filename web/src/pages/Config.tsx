@@ -2,8 +2,11 @@ import { FC, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AiOutlineSave } from 'react-icons/ai';
 import { CgEditBlackPoint } from 'react-icons/cg';
-import dayjs from 'dayjs';
 import { AxiosError } from 'axios';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 import { Container } from 'container';
 import { Config } from 'domain/config';
@@ -108,6 +111,14 @@ const ConfigPage: FC<ConfigProps> = ({ setTitle }) => {
           )}
         </Wrapper>
         {error && <Message $error>{error}</Message>}
+        <p style={{ fontSize: '0.8rem' }}>
+          {config.valid ? (
+            <b style={{ color: 'green' }}>Valid</b>
+          ) : (
+            <b style={{ color: 'red' }}>Invalid</b>
+          )}{' '}
+          · <b>Checksum:</b> {config.checksum}
+        </p>
         {dataExpanded && (
           <>
             <ConfigData data={config.data} onChange={handleDataChange} />
@@ -130,6 +141,14 @@ const ConfigPage: FC<ConfigProps> = ({ setTitle }) => {
               <Wrapper $verticalAlignment={Alignment.Center} $gap={Size.Small}>
                 <SmallTitle>{access.source}</SmallTitle>
                 <SmallestTitle>{access.instance}</SmallestTitle>
+              </Wrapper>
+              <Wrapper $vertical>
+                <small>Last access: {dayjs().to(access.timestamp)}</small>
+                {access.previous && (
+                  <small>
+                    Interval: {dayjs(access.timestamp).diff(access.previous)} ms
+                  </small>
+                )}
               </Wrapper>
             </ListItemContent>
           </ListItem>
