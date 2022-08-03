@@ -141,9 +141,15 @@ func (c *ConfigdClient) fetchConfig(
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	req.Header.Set("X-Configd-Source", c.source)
 	req.Header.Set("X-Configd-Instance", c.instance)
+
 	if len(c.password) > 0 {
 		req.Header.Set("X-Configd-Password", c.password)
 	}
+
+	q := req.URL.Query()
+	q.Set("populate", "true")
+
+	req.URL.RawQuery = q.Encode()
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
