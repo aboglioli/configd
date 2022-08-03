@@ -23,6 +23,8 @@ pub struct GetConfigCommand {
     pub instance: Option<String>,
     #[serde(skip_deserializing)]
     pub password: Option<String>,
+    #[serde(skip_deserializing)]
+    pub populate: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -86,8 +88,15 @@ impl GetConfig {
         };
 
         let config = schema.get_config(&config_id, access, password.as_ref())?;
-        let data = schema.populate_config(&config);
-        let checksum = data.checksum();
+
+        let (data, checksum) = if cmd.populate.unwrap_or(false) {
+            let data = schema.populate_config(&config);
+            let checksum = data.checksum();
+
+            (data, checksum)
+        } else {
+            (config.data().clone(), config.data().checksum())
+        };
 
         self.event_publisher.publish(schema.events()).await?;
 

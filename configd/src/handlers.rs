@@ -3,7 +3,7 @@ use axum::{
     http::{header, StatusCode},
     response::{IntoResponse, Response},
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{
@@ -147,8 +147,14 @@ pub async fn validate_config(
     Ok((StatusCode::OK, Json(res)))
 }
 
+#[derive(Deserialize)]
+pub struct PopulateQuery {
+    populate: Option<bool>,
+}
+
 pub async fn get_config_by_id(
     Path((schema_id, config_id)): Path<(String, String)>,
+    Query(cmd): Query<PopulateQuery>,
     headers: header::HeaderMap,
     Extension(container): Extension<Arc<Container>>,
 ) -> Result<impl IntoResponse, Error> {
@@ -179,6 +185,7 @@ pub async fn get_config_by_id(
                 .transpose()
                 .unwrap_or(None)
                 .map(|header| header.to_string()),
+            populate: cmd.populate,
         })
         .await?;
 
